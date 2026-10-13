@@ -276,11 +276,15 @@ public class RobotMachiningCycle : MonoBehaviour
                 Vector3 size=Vector3.Scale(bounds.extents,mesh.transform.lossyScale);
                 size=new Vector3(Mathf.Abs(size.x),Mathf.Abs(size.y),Mathf.Abs(size.z));
                 int count=Physics.OverlapBoxNonAlloc(mesh.transform.TransformPoint(bounds.center),size,returnContacts,mesh.transform.rotation);
+                if(count==returnContacts.Length)Debug.LogWarning("[Machining] CLEARANCE QUERY OVERFLOW: contact buffer is full; collision validation is inconclusive.");
                 for(int i=0;i<count;i++)
                 {
                     var hit=returnContacts[i];
                     if(hit.transform.root.name!="Haas Mill - Open Loading Bay" && !(conveyor && hit.transform.IsChildOf(conveyor.transform)))continue;
                     if(!Physics.ComputePenetration(armProbes[meshIndex],mesh.transform.position,mesh.transform.rotation,hit,hit.transform.position,hit.transform.rotation,out _,out float depth))continue;
+                    // A blank resting on the belt is intentional support contact.
+                    // Deeper intersections and all robot/rail contacts remain failures.
+                    if(conveyor && mesh.transform.IsChildOf(raw.transform) && raw.transform.parent!=robot.grip && hit.transform==conveyor.beltSurface && depth<=.001f)continue;
                     string key=Message+":"+mesh.name+":"+hit.name;
                     if(cycleHits.Add(key))Debug.LogWarning("[Machining] FULL CONTACT: "+key+" depth="+depth.ToString("F4")+" grip="+robot.grip.position);
                 }
