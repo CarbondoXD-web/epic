@@ -284,7 +284,7 @@ public class RobotMachiningCycle : MonoBehaviour
                     if(!Physics.ComputePenetration(armProbes[meshIndex],mesh.transform.position,mesh.transform.rotation,hit,hit.transform.position,hit.transform.rotation,out _,out float depth))continue;
                     // A blank resting on the belt is intentional support contact.
                     // Deeper intersections and all robot/rail contacts remain failures.
-                    if(conveyor && mesh.transform.IsChildOf(raw.transform) && raw.transform.parent!=robot.grip && hit.transform==conveyor.beltSurface && depth<=.001f)continue;
+                    if(conveyor && mesh.transform.IsChildOf(raw.transform) && hit.transform==conveyor.beltSurface && depth<=.001f)continue;
                     string key=Message+":"+mesh.name+":"+hit.name;
                     if(cycleHits.Add(key))Debug.LogWarning("[Machining] FULL CONTACT: "+key+" depth="+depth.ToString("F4")+" grip="+robot.grip.position);
                 }

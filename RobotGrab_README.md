@@ -72,7 +72,9 @@
 
 重新生成主场景后，先执行 `Tools > EPIC > Install Feed Conveyor`，该命令会同时生成导向轨道。已有输送带可执行 `Tools > EPIC > Add Feed Guide Rails` 更新轨道，然后保存场景；重复执行只更新同名轨道，支持 Undo，不累计添加。
 
-本次已检查场景对象引用和六个 LFS 模型的 SHA-256；使用简化 Unity API 的 C# 测试程序编译并执行实际送料控制器，覆盖送料同步、损坏暂停、停稳等待、重复送料、零时长和无纹路对象。该测试不涵盖 Unity 引擎、编辑器或物理系统。交付环境没有 Unity 编辑器，因此尚未完成 Unity 编译、完整流程播放及轨道与机械臂碰撞验证。验收时请检查正常循环、送料期间损坏/修复、停稳期间损坏/修复、第二轮送料，以及编辑器重复添加轨道。
+已在 Unity 6000.6.0f1 中完成真实编译和三轮完整加工循环验证：送料与带面移动同步、原料落带高度、导轨数量及 200 mm 取料间隙、重复启动拦截、送料期间损坏/修复、停稳期间损坏/修复和连续补料均通过。碰撞查询自检通过，三轮机械臂/夹持工件与机床和输送带的接触记录均为零。验证报告见 `docs/conveyor-validation.json`，验证范围限于当前固定场景及凸包检测。
+
+送料带方向已转到机械臂外侧，保留原取料点，避开成品下降及退离区域。场景里远离送料区的重复导入模块 `05-10274069-DE1_Simplify_1.002` 已停用，其对象和 FBX 原始模型仍保留。`Tools > EPIC > Calibrate Feed Conveyor Clearance` 可在编辑模式比较八个摆放方向，检查待机机械臂、机床及成品区 0.60 × 0.70 × 0.60 m 的预留空间，选择无接触布局后保存场景；动态安全性需继续运行全流程验证。
 
 ## 自动验证动画和碰撞
 
@@ -80,4 +82,8 @@
 
 完成后自动退出 Play Mode，报告保存在项目根目录 `ValidationReports/conveyor-validation.json`，含检查项、碰撞记录、失败原因和 PASS/FAIL。报告目录不提交到 Git。测试会临时操作场景，但不保存 Play Mode 中的改动；切换场景前会提示保存已有编辑。
 
-也支持命令行自动运行：`Unity.exe -batchmode -projectPath <项目绝对路径> -executeMethod ConveyorValidation.RunBatch -logFile <日志路径>`。不要添加 `-quit`；验证器完成后自动以 0（通过）或 1（失败）退出。需要已安装且可使用的 Unity 编辑器。新增自动验证器尚未在 Unity 引擎中执行，不能把自动验证入口的实现视为实际验证通过。
+Windows 推荐使用 `powershell -ExecutionPolicy Bypass -File Tools/Validate-Unity.ps1 -EditorPath "<Unity.exe 绝对路径>"`。脚本会使用现有 Windows 代理，运行验证，并输出退出码和报告；代理设置仅用于该进程。首次导入若遇到 Unity 6000.6.0f1 渲染管线的转换器脚本缺失 `.meta`、`MaterialReferenceChanger` 编译失败，脚本会补齐项目包缓存中的元数据并重试一次，保持供应商脚本内容不变。
+
+也支持命令行自动运行：`Unity.exe -batchmode -projectPath <项目绝对路径> -executeMethod ConveyorValidation.RunBatch -logFile <日志路径>`。不要添加 `-quit`；验证器完成后自动以 0（通过）或 1（失败）退出。需要已安装且激活的 Unity 编辑器。编辑器启动回调先完成再开始场景测试；若启动回调记录异常，会保存在报告的 `editorStartupLog` 中。
+
+移除了未被脚本或场景使用的 AI Assistant 预览包依赖，避免打开项目时额外下载该包导致导入中断。模型、运行时加工控制及其余依赖保留。

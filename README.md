@@ -19,3 +19,5 @@ Game 窗口取消勾选 `Low Resolution Aspect Ratios`，避免低分辨率预�
 这是固定工位布局的交互原型，加工以动画和工件模型切换表示，不模拟真实切削或工业夹持力。
 
 项目迁移自 [scy8848/EPIC](https://github.com/scy8848/EPIC)，包含原料输送带两侧导向轨道和带面移动同步修正。实现及验证范围见 `RobotGrab_README.md`。
+
+已通过 Unity 6000.6.0f1 的三轮实际加工循环、故障暂停/恢复及机床和输送带碰撞检查。报告见 `docs/conveyor-validation.json`。Windows 首次导入或自动验证可运行 `Tools/Validate-Unity.ps1`，自动处理该编辑器版本中渲染管线转换器脚本缺少元数据的问题。

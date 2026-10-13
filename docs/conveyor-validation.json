@@ -1,0 +1,21 @@
+{
+    "unityVersion": "6000.6.0f1",
+    "startedUtc": "2026-10-13T14:39:59.9132095Z",
+    "finishedUtc": "2026-10-13T14:41:45.6203615Z",
+    "editorStartupLog": "",
+    "passed": true,
+    "completedCycles": 3,
+    "completedCollisionChecks": 3,
+    "collisionSelfCheckPassed": true,
+    "checks": [
+        "Both solid guide rails exist once and preserve 200 mm pickup clearance.",
+        "Blank sits on the belt; the delivery route is level.",
+        "Cycle 1 completed; duplicate start ignored.",
+        "Damage pauses delivery and belt; repair resumes.",
+        "Cycle 2 completed; duplicate start ignored.",
+        "Damage pauses settling; pickup remains blocked until repair.",
+        "Cycle 3 completed; duplicate start ignored."
+    ],
+    "failures": [],
+    "contacts": []
+}

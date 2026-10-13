@@ -26,6 +26,7 @@ public class ConveyorFeedController : MonoBehaviour
         IsMoving=false;IsReady=false;
         raw.transform.SetParent(null,true);
         raw.interpolation=RigidbodyInterpolation.None;raw.isKinematic=true;
+        raw.position=feedStart;raw.rotation=rawRotation;
         raw.transform.SetPositionAndRotation(feedStart,rawRotation);
         beltPhase=0;
         AdvanceTreads(0);

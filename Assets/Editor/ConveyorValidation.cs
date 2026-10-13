@@ -14,11 +14,13 @@ public static class ConveyorValidation
     const string PassedKey="EPIC.Validation.Passed", ErrorKey="EPIC.Validation.Error";
     const string StartedKey="EPIC.Validation.Started";
     const string SelfCheckKey="EPIC.Validation.SelfCheck";
+    const string QueuedKey="EPIC.Validation.Queued", StartupKey="EPIC.Validation.Startup";
     const string ScenePath="Assets/Scenes/RobotMachineGrab.unity";
     enum Phase { WaitFeed, WaitSettle, Paused, WaitComplete }
     [Serializable] sealed class Report
     {
         public string unityVersion, startedUtc, finishedUtc;
+        public string editorStartupLog;
         public bool passed;
         public int completedCycles;
         public int completedCollisionChecks;
@@ -48,12 +50,21 @@ public static class ConveyorValidation
     public static void Run() { Begin(false); }
     // Unity.exe -batchmode -projectPath <project> -executeMethod ConveyorValidation.RunBatch
     // Omit -quit: the validator exits with code 0/1 after Play Mode finishes.
-    public static void RunBatch() { Begin(true); }
+    public static void RunBatch()
+    {
+        SessionState.SetBool(QueuedKey,true);
+        SessionState.SetString(StartupKey,"");
+        SessionState.SetString(StartedKey,DateTime.UtcNow.ToString("o"));
+        // Let queued editor startup callbacks complete before measuring the scene.
+        EditorApplication.delayCall+=()=>EditorApplication.delayCall+=()=>Begin(true);
+    }
     static void Begin(bool batch)
     {
         if(EditorApplication.isPlayingOrWillChangePlaymode || SessionState.GetBool(ActiveKey,false))
             throw new InvalidOperationException("Stop Play Mode before starting EPIC validation.");
         if(!batch && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())return;
+        SessionState.SetBool(QueuedKey,false);
+        if(!batch)SessionState.SetString(StartupKey,"");
         SessionState.SetBool(BatchKey,batch);
         SessionState.SetBool(PassedKey,false);
         SessionState.SetString(ErrorKey,"");
@@ -72,7 +83,7 @@ public static class ConveyorValidation
         if(!SessionState.GetBool(ActiveKey,false))return;
         if(state==PlayModeStateChange.EnteredPlayMode)
         {
-            report=new Report {unityVersion=Application.unityVersion,startedUtc=SessionState.GetString(StartedKey,"")};
+            report=new Report {unityVersion=Application.unityVersion,startedUtc=SessionState.GetString(StartedKey,""),editorStartupLog=SessionState.GetString(StartupKey,"")};
             try
             {
                 cycle=UnityEngine.Object.FindFirstObjectByType<RobotMachiningCycle>();
@@ -92,7 +103,7 @@ public static class ConveyorValidation
         }
         if(state==PlayModeStateChange.ExitingPlayMode && report!=null && report.finishedUtc==null)
             Finish("Validation interrupted before completion.");
-        if(state==PlayModeStateChange.ExitedPlayMode)
+        if(state==PlayModeStateChange.EnteredEditMode)
         {
             bool batch=SessionState.GetBool(BatchKey,false),passed=SessionState.GetBool(PassedKey,false);
             SessionState.SetBool(ActiveKey,false);
@@ -134,7 +145,12 @@ public static class ConveyorValidation
     }
     static void Tick()
     {
-        if(!SessionState.GetBool(ActiveKey,false))return;
+        if(!SessionState.GetBool(ActiveKey,false))
+        {
+            if(SessionState.GetBool(QueuedKey,false) && DateTime.TryParse(SessionState.GetString(StartedKey,""),out var queued) && (DateTime.UtcNow-queued.ToUniversalTime()).TotalSeconds>180)
+                Fail("Timed out waiting for editor startup callbacks.");
+            return;
+        }
         if(report==null)
         {
             if(DateTime.TryParse(SessionState.GetString(StartedKey,""),out var started) && (DateTime.UtcNow-started.ToUniversalTime()).TotalSeconds>180)
@@ -201,6 +217,8 @@ public static class ConveyorValidation
     }
     static void OnLog(string condition,string stackTrace,LogType type)
     {
+        if(SessionState.GetBool(QueuedKey,false) && (type==LogType.Error || type==LogType.Exception || type==LogType.Assert))
+            SessionState.SetString(StartupKey,SessionState.GetString(StartupKey,"")+condition+"\n"+stackTrace+"\n");
         if(!SessionState.GetBool(ActiveKey,false) || (report!=null && report.finishedUtc!=null))return;
         if(condition.Contains("CLEARANCE QUERY SELF CHECK: True"))SessionState.SetBool(SelfCheckKey,true);
         if(report!=null && condition.StartsWith("[Machining] FULL CYCLE CHECK:"))report.completedCollisionChecks++;
@@ -215,6 +233,7 @@ public static class ConveyorValidation
     {
         if(report==null)report=new Report {unityVersion=Application.unityVersion,startedUtc=SessionState.GetString(StartedKey,"")};
         if(report.finishedUtc!=null)return;
+        SessionState.SetBool(QueuedKey,false);
         if(!string.IsNullOrEmpty(failure))report.failures.Add(failure);
         string runtimeError=SessionState.GetString(ErrorKey,"");
         if(runtimeError.Length>0 && !report.failures.Contains(runtimeError))report.failures.Add(runtimeError);

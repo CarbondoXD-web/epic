@@ -115,3 +115,5 @@ InitTestScene*.unity*
 
 # Reports from the EPIC scene validator
 /ValidationReports/
+/ConveyorModelReport.txt
+/ConveyorInstalled.txt

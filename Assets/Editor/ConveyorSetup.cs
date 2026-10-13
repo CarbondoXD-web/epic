@@ -19,6 +19,7 @@ public static class ConveyorSetup
         if(!cycle || !asset || cycle.conveyor)return;
         Vector3 pickup=cycle.raw.position;
         Vector3 direction=cycle.machinePosition-pickup;direction.y=0;direction.Normalize();
+        direction=Quaternion.AngleAxis(-90f,Vector3.up)*direction;
         RobotGrabController.ProjectionRange(cycle.raw.transform,Vector3.zero,Vector3.up,out float surfaceHeight,out _);
         var root=new GameObject("Raw Feed Conveyor");
         var control=root.AddComponent<ConveyorFeedController>();
