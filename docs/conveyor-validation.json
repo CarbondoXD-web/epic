@@ -1,21 +1,24 @@
 {
     "unityVersion": "6000.6.0f1",
-    "startedUtc": "2026-10-14T11:49:22.8166331Z",
-    "finishedUtc": "2026-10-14T11:51:17.8254013Z",
+    "startedUtc": "2026-10-14T12:06:33.1152987Z",
+    "finishedUtc": "2026-10-14T12:09:17.6717131Z",
     "editorStartupLog": "",
     "passed": true,
-    "completedCycles": 3,
-    "completedCollisionChecks": 3,
+    "completedCycles": 4,
+    "completedCollisionChecks": 4,
     "collisionSelfCheckPassed": true,
     "checks": [
         "Both solid guide rails exist once and preserve 200 mm pickup clearance.",
         "Blank sits on the belt; the delivery route is level.",
         "3.05 m central line follows machine frontage; bed, rails and legs clear machine and output table.",
+        "201 door sweep samples clear casing, shelves and upper/lower guides.",
         "Cycle 1 completed; duplicate start ignored.",
         "Damage pauses delivery and belt; repair resumes.",
         "Cycle 2 completed; duplicate start ignored.",
         "Damage pauses settling; pickup remains blocked until repair.",
-        "Cycle 3 completed; duplicate start ignored."
+        "Cycle 3 completed; duplicate start ignored.",
+        "Damage freezes door mid-opening; repair resumes along the same track before loading is enabled.",
+        "Cycle 4 completed; duplicate start ignored."
     ],
     "failures": [],
     "contacts": []

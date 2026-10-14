@@ -16,7 +16,7 @@ public static class ConveyorValidation
     const string SelfCheckKey="EPIC.Validation.SelfCheck";
     const string QueuedKey="EPIC.Validation.Queued", StartupKey="EPIC.Validation.Startup";
     const string ScenePath="Assets/Scenes/RobotMachineGrab.unity";
-    enum Phase { WaitFeed, WaitSettle, Paused, WaitComplete }
+    enum Phase { WaitFeed, WaitSettle, WaitDoor, Paused, WaitComplete }
     [Serializable] sealed class Report
     {
         public string unityVersion, startedUtc, finishedUtc;
@@ -97,6 +97,9 @@ public static class ConveyorValidation
                 Require(report.collisionSelfCheckPassed,"Collision query self-check did not pass; collision validation is unavailable.");
                 ValidateRails();
                 ValidateCentralLayout();
+                var doorSweep=MachineDoorSetup.CheckSweep(cycle.machine);
+                Require(doorSweep.passed,"Door sweep intersects casing, shelf or guide: inspect door-clearance.json.");
+                report.checks.Add("201 door sweep samples clear casing, shelves and upper/lower guides.");
                 robotBasePosition=cycle.robot.transform.position;
                 robotBaseRotation=cycle.robot.transform.rotation;
                 Require(!cycle.robot.IsDamaged,"Robot must begin repaired.");
@@ -141,7 +144,7 @@ public static class ConveyorValidation
     {
         Require(Vector3.Distance(cycle.raw.position,conveyor.feedStart)<.001f && !conveyor.IsReady,"Raw blank was not restaged at the feed entrance.");
         roundStarted=EditorApplication.timeSinceStartup;
-        phase=round==0?Phase.WaitComplete:round==1?Phase.WaitFeed:Phase.WaitSettle;
+        phase=round==0?Phase.WaitComplete:round==1?Phase.WaitFeed:round==2?Phase.WaitSettle:Phase.WaitDoor;
         previousRaw=cycle.raw.position;
         Require(conveyor.treadMarkers!=null && conveyor.treadMarkers.Length>0 && conveyor.treadMarkers[0],"Belt tread reference is missing.");
         previousTread=conveyor.treadMarkers[0].position;
@@ -199,6 +202,7 @@ public static class ConveyorValidation
             previousRaw=cycle.raw.position;previousTread=conveyor.treadMarkers[0].position;
             if(phase==Phase.WaitFeed && conveyor.IsMoving && Vector3.Distance(cycle.raw.position,conveyor.feedStart)>.05f)Pause();
             else if(phase==Phase.WaitSettle && !conveyor.IsMoving && !conveyor.IsReady)Pause();
+            else if(phase==Phase.WaitDoor && cycle.machine.DoorIsMoving && Vector3.Distance(cycle.machine.door.position,cycle.machine.doorClosed)>.1f)Pause();
             else if(phase==Phase.Paused)
             {
                 for(int i=0;i<pausedTransforms.Length;i++)
@@ -206,11 +210,12 @@ public static class ConveyorValidation
                     Require(Vector3.Distance(pausedTransforms[i].localPosition,pausedPositions[i])<.0001f,"Transform moved while damaged: "+pausedTransforms[i].name);
                     Require(Quaternion.Angle(pausedTransforms[i].localRotation,pausedRotations[i])<.05f,"Transform rotated while damaged: "+pausedTransforms[i].name);
                 }
-                Require(!conveyor.IsReady,"Conveyor became ready while damaged.");
+                if(round<3)Require(!conveyor.IsReady,"Conveyor became ready while damaged.");
+                else Require(cycle.machine.DoorIsMoving && !cycle.machine.DoorIsOpen,"Door loading interlock became ready while opening was paused.");
                 if(EditorApplication.timeSinceStartup-pauseStarted>=.5)
                 {
                     cycle.robot.ToggleDamage();
-                    report.checks.Add(round==1?"Damage pauses delivery and belt; repair resumes.":"Damage pauses settling; pickup remains blocked until repair.");
+                    report.checks.Add(round==1?"Damage pauses delivery and belt; repair resumes.":round==2?"Damage pauses settling; pickup remains blocked until repair.":"Damage freezes door mid-opening; repair resumes along the same track before loading is enabled.");
                     phase=Phase.WaitComplete;
                 }
             }
@@ -221,7 +226,7 @@ public static class ConveyorValidation
                 Require(!cycle.machine.IsBusy && !cycle.robot.IsHolding && cycle.finished.gameObject.activeInHierarchy,"Cycle did not release the finished part or clear its busy state.");
                 report.completedCycles=round+1;
                 report.checks.Add("Cycle "+(round+1)+" completed; duplicate start ignored.");
-                if(++round<3)StartRound();else Finish(null);
+                if(++round<4)StartRound();else Finish(null);
             }
         }
         catch(Exception e) { Fail(e.Message); }
@@ -261,8 +266,8 @@ public static class ConveyorValidation
         string runtimeError=SessionState.GetString(ErrorKey,"");
         if(runtimeError.Length>0 && !report.failures.Contains(runtimeError))report.failures.Add(runtimeError);
         if(report.contacts.Count>0)report.failures.Add("Robot/workpiece collision contacts detected; inspect contacts in this report.");
-        if(report.completedCollisionChecks!=3)report.failures.Add("Expected three completed full-cycle collision checks.");
-        report.passed=report.completedCycles==3 && report.failures.Count==0;
+        if(report.completedCollisionChecks!=4)report.failures.Add("Expected four completed full-cycle collision checks.");
+        report.passed=report.completedCycles==4 && report.failures.Count==0;
         report.finishedUtc=DateTime.UtcNow.ToString("o");
         SessionState.SetBool(PassedKey,report.passed);
         string directory=Path.GetFullPath("ValidationReports");Directory.CreateDirectory(directory);

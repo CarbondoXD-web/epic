@@ -17,6 +17,11 @@ public class RobotOrbitCamera : MonoBehaviour
     {
         focus = initialFocus; yaw = initialYaw; pitch = initialPitch; distance = initialDistance;
     }
+    public void Frame(Vector3 target,Vector3 position)
+    {
+        focus=target;transform.position=position;transform.LookAt(target);
+        Awake();
+    }
     void Awake()
     {
         initialFocus = focus;

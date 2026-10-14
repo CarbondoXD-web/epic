@@ -26,4 +26,6 @@ Game 窗口取消勾选 `Low Resolution Aspect Ratios`，避免低分辨率预�
 
 项目迁移自 [scy8848/EPIC](https://github.com/scy8848/EPIC)，包含原料输送带两侧导向轨道和带面移动同步修正。实现及验证范围见 `RobotGrab_README.md`。
 
-已通过 Unity 6000.6.0f1 的三轮实际加工循环、故障暂停/恢复及机床和输送带碰撞检查。报告见 `docs/conveyor-validation.json`。Windows 首次导入或自动验证可运行 `Tools/Validate-Unity.ps1`，自动处理该编辑器版本中渲染管线转换器脚本缺少元数据的问题。
+加工仓门沿独立的外置上下导轨平移，行程 1.05 米，开合各约 1.6 秒。侧面托架避开门板停靠区域；五次缓动使起止速度和加速度均为零。门完全打开后才允许上料，机械臂退出后才关门，工作台回位后才再次开门。选择 `Tools > EPIC > Show Chamber Door Dynamic Preview` 可从机床正面观看连续开门、上料、加工、取件和关门过程。
+
+已通过 Unity 6000.6.0f1 的四轮实际加工循环、故障暂停/恢复及机床和输送带碰撞检查，第四轮专门检查开门中途故障暂停和恢复。门板整个行程另以 201 个采样点检查机壳、侧面托架及上下导轨。报告见 `docs/conveyor-validation.json` 和 `docs/door-clearance.json`。Windows 首次导入或自动验证可运行 `Tools/Validate-Unity.ps1`，自动处理该编辑器版本中渲染管线转换器脚本缺少元数据的问题。
