@@ -28,4 +28,6 @@ Game 窗口取消勾选 `Low Resolution Aspect Ratios`，避免低分辨率预�
 
 加工仓门沿独立的外置上下导轨平移，行程 1.05 米，开合各约 1.6 秒。侧面托架避开门板停靠区域；五次缓动使起止速度和加速度均为零。门完全打开后才允许上料，机械臂退出后才关门，工作台回位后才再次开门。选择 `Tools > EPIC > Show Chamber Door Dynamic Preview` 可从机床正面观看连续开门、上料、加工、取件和关门过程。
 
+机床左侧两个 CAD 附件装到四立柱落地工具架上，分别由上下层托板承托；工具架位于仓门停靠区之外。输送线十根支腿连接到五根横梁，横梁连接带床，消除原来的悬空支撑间隙。仓门上下导轨增加六个可见固定支架，与机壳连接。结构检查报告见 `docs/structure-validation.json`。`FactoryStructureSetup.ApplyBatch` 可重复重建这些支撑，保留原附件模型且不会叠加对象。
+
 已通过 Unity 6000.6.0f1 的四轮实际加工循环、故障暂停/恢复及机床和输送带碰撞检查，第四轮专门检查开门中途故障暂停和恢复。门板整个行程另以 201 个采样点检查机壳、侧面托架及上下导轨。报告见 `docs/conveyor-validation.json` 和 `docs/door-clearance.json`。Windows 首次导入或自动验证可运行 `Tools/Validate-Unity.ps1`，自动处理该编辑器版本中渲染管线转换器脚本缺少元数据的问题。

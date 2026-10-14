@@ -97,6 +97,8 @@ public static class ConveyorValidation
                 Require(report.collisionSelfCheckPassed,"Collision query self-check did not pass; collision validation is unavailable.");
                 ValidateRails();
                 ValidateCentralLayout();
+                var structure=FactoryStructureSetup.Check(cycle);
+                report.checks.AddRange(structure.checks);
                 var doorSweep=MachineDoorSetup.CheckSweep(cycle.machine);
                 Require(doorSweep.passed,"Door sweep intersects casing, shelf or guide: inspect door-clearance.json.");
                 report.checks.Add("201 door sweep samples clear casing, shelves and upper/lower guides.");

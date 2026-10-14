@@ -46,11 +46,13 @@ public static class FactoryConveyorLayout
             // Leave the final 550 mm cantilevered beyond the last frame so
             // a support cannot occupy the fixed robot's pedestal/swing zone.
             Vector3 station=center+forward*(-length*.5f+.16f+i*(length-.32f-.55f)/4);
-            Piece(conveyor,"Central line crossbeam "+i,new Vector3(station.x,top-.25f,station.z),new Vector3(.38f,.05f,.05f),forward,metal);
+            // Bed underside is top - .127 m. Crossbeam top meets it;
+            // uprights finish exactly at the crossbeam underside.
+            Piece(conveyor,"Central line crossbeam "+i,new Vector3(station.x,top-.152f,station.z),new Vector3(.38f,.05f,.05f),forward,metal);
             foreach(int side in new[]{-1,1})
             {
                 Vector3 foot=station+Vector3.Cross(Vector3.up,forward)*(.14f*side);
-                float height=top-.25f;
+                float height=top-.177f;
                 Piece(conveyor,"Central line leg "+i+" "+side,new Vector3(foot.x,height*.5f,foot.z),new Vector3(.04f,height,.04f),forward,metal);
             }
         }

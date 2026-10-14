@@ -76,7 +76,7 @@ public static class MachineDoorSetup
             if(renderer.name=="CONV-SHELF-VF-SM")original=new Vector3(.7842f,1.3825f,1.3197f);
             else if(renderer.name=="CONV-HOLDER-VF-XS")original=new Vector3(.8476f,2.1196f,1.2902f);
             else continue;
-            renderer.transform.position+=original+travel*.20f-renderer.bounds.center;
+            renderer.transform.position+=original+travel*.32f-renderer.bounds.center;
         }
         for(int i=0;i<2;i++)
         {
@@ -92,6 +92,7 @@ public static class MachineDoorSetup
             rail.transform.localScale=new Vector3(.04f/scale.x,.03f/scale.y,(max-min+1.05f+.08f)/scale.z);
             rail.GetComponent<Renderer>().sharedMaterial=metal;
         }
+        FactoryStructureSetup.Build(machine);
         EditorUtility.SetDirty(machine);
         EditorSceneManager.MarkSceneDirty(machine.gameObject.scene);
         EditorSceneManager.SaveScene(machine.gameObject.scene);

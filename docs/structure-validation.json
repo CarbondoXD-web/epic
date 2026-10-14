@@ -1,0 +1,9 @@
+{
+    "passed": true,
+    "checks": [
+        "Both original CAD attachments sit on a four-post grounded tool rack.",
+        "All ten conveyor legs join the floor and five crossbeams; crossbeams meet the bed.",
+        "Door upper/lower guides have visible rigid mounting spacers.",
+        "Tool rack base, uprights and shelves clear the finished-part table."
+    ]
+}
