@@ -11,7 +11,7 @@ public class RobotOrbitCamera : MonoBehaviour
     public static bool IsPointerOverControls(Vector2 screenPosition)
     {
         Vector2 p = new Vector2(screenPosition.x / Screen.width * 1280, (1 - screenPosition.y / Screen.height) * 720);
-        return new Rect(954, 20, 302, 120).Contains(p);
+        return new Rect(954, 20, 302, 120).Contains(p) || new Rect(20,20,450,115).Contains(p);
     }
     void ResetView()
     {

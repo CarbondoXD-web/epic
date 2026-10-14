@@ -39,6 +39,8 @@ public static class ConveyorValidation
     static Vector3[] pausedPositions;
     static Quaternion[] pausedRotations;
     static Vector3 previousRaw, previousTread;
+    static Vector3 robotBasePosition;
+    static Quaternion robotBaseRotation;
 
     static ConveyorValidation()
     {
@@ -94,6 +96,9 @@ public static class ConveyorValidation
                 report.collisionSelfCheckPassed=SessionState.GetBool(SelfCheckKey,false);
                 Require(report.collisionSelfCheckPassed,"Collision query self-check did not pass; collision validation is unavailable.");
                 ValidateRails();
+                ValidateCentralLayout();
+                robotBasePosition=cycle.robot.transform.position;
+                robotBaseRotation=cycle.robot.transform.rotation;
                 Require(!cycle.robot.IsDamaged,"Robot must begin repaired.");
                 initialCount=cycle.CompletedCount;
                 round=0;
@@ -143,6 +148,23 @@ public static class ConveyorValidation
         cycle.StartCycle();
         cycle.StartCycle(); // Busy gating must prevent a second concurrent cycle.
     }
+    static void ValidateCentralLayout()
+    {
+        var surface=conveyor.beltSurface;
+        Require(Mathf.Abs(surface.TransformVector(Vector3.forward).magnitude-3.05f)<.005f,"Central aisle belt must be 3.05 m long.");
+        Vector3 forward=(conveyor.pickupPosition-conveyor.feedStart).normalized;
+        Require(Vector3.Angle(forward,Quaternion.Euler(0,25,0)*Vector3.forward)<.1f,"Central line must run parallel to the machine frontage.");
+        Require(Vector3.Distance(conveyor.pickupPosition,new Vector3(-.2250978f,1.3223505f,-.1678875f))<.005f,"Pickup station is not at the reference aisle location.");
+        var output=GameObject.Find("Finished Parts Table");
+        var obstacles=cycle.machine.GetComponentsInChildren<Collider>().Concat(output.GetComponentsInChildren<Collider>()).ToArray();
+        Physics.SyncTransforms();
+        foreach(var piece in conveyor.GetComponentsInChildren<BoxCollider>())foreach(var obstacle in obstacles)
+        {
+            bool intersects=Physics.ComputePenetration(piece,piece.transform.position,piece.transform.rotation,obstacle,obstacle.transform.position,obstacle.transform.rotation,out _,out float depth);
+            Require(!intersects || depth<=.001f,"Central conveyor intersects "+obstacle.name+": "+piece.name+" depth="+depth);
+        }
+        report.checks.Add("3.05 m central line follows machine frontage; bed, rails and legs clear machine and output table.");
+    }
     static void Tick()
     {
         if(!SessionState.GetBool(ActiveKey,false))
@@ -162,6 +184,7 @@ public static class ConveyorValidation
         {
             string error=SessionState.GetString(ErrorKey,"");
             Require(error.Length==0,error);
+            Require(Vector3.Distance(cycle.robot.transform.position,robotBasePosition)<.0001f && Quaternion.Angle(cycle.robot.transform.rotation,robotBaseRotation)<.01f,"Robot pedestal moved during the cycle.");
             Require(EditorApplication.timeSinceStartup-roundStarted<180,"Cycle timed out.");
             if(conveyor.IsMoving)
             {
