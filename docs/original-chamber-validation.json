@@ -1,0 +1,14 @@
+{
+    "passed": true,
+    "sourceSha256": "e8c359976078c593bdb1388f512824d0d44821c72146e993543f64641d11182e",
+    "restoredParts": [
+        "37-1465-DEF",
+        "20T Spindle_37-3797",
+        "rf100u_3891_3_000",
+        "37-1465-DEF-ENCLOSURE",
+        "SCHUNK-KSC-F / S2 80.001"
+    ],
+    "conveyorUnchanged": true,
+    "robotBaseUnchanged": true,
+    "externalRackUnchanged": true
+}

@@ -5,6 +5,9 @@ public class MachineOperationController : MonoBehaviour
 {
     public RobotGrabController robot;
     public Transform door, carriage;
+    public Transform toolHead;
+    public Vector3 toolRest, toolLoading;
+    [Min(.2f)] public float toolSeconds=.75f;
     public Renderer indicator;
     [Min(.2f)] public float doorSeconds=.85f, tableSeconds=.7f;
     public Vector3 doorClosed, doorOpen, carriageLoading, carriageProcessing;
@@ -29,6 +32,7 @@ public class MachineOperationController : MonoBehaviour
     IEnumerator Slide(Transform target,Vector3 position,float duration)
     {
         Vector3 start=target.position;
+        if(Vector3.Distance(start,position)<.0001f)yield break;
         for(float elapsed=0;elapsed<duration;)
         {
             if(!robot.IsDamaged)
@@ -48,6 +52,7 @@ public class MachineOperationController : MonoBehaviour
     {
         if(!TableIsLoading){Debug.LogError("[Machine] Door interlock: table has not returned.");yield break;}
         if(DoorIsOpen)yield break;
+        if(toolHead)yield return Slide(toolHead,toolLoading,toolSeconds);
         DoorIsMoving=true;
         yield return Slide(door,doorOpen,doorSeconds);
         DoorIsMoving=false;DoorIsOpen=true;
@@ -60,12 +65,14 @@ public class MachineOperationController : MonoBehaviour
         part.SetParent(carriage,true);
         TableIsLoading=false;
         yield return Slide(carriage,carriageProcessing,tableSeconds);
+        if(toolHead)yield return Slide(toolHead,toolRest,toolSeconds);
         IsProcessing=true;
         Debug.Log("[Machine] Door closed; carriage in processing position.");
     }
     public IEnumerator ReturnTable()
     {
         IsProcessing=false;
+        if(toolHead)yield return Slide(toolHead,toolLoading,toolSeconds);
         yield return Slide(carriage,carriageLoading,tableSeconds);TableIsLoading=true;
         Debug.Log("[Machine] Carriage returned; spindle stopped.");
         yield return OpenDoor();

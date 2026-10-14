@@ -99,6 +99,9 @@ public static class ConveyorValidation
                 ValidateCentralLayout();
                 var structure=FactoryStructureSetup.Check(cycle);
                 report.checks.AddRange(structure.checks);
+                var chamber=OriginalChamberSetup.Check(cycle);
+                Require(chamber.passed,"Chamber internals differ from the supplied FBX.");
+                report.checks.Add("Chamber column, spindle, tool and fixture match original FBX positions; external factory layout is preserved.");
                 var doorSweep=MachineDoorSetup.CheckSweep(cycle.machine);
                 Require(doorSweep.passed,"Door sweep intersects casing, shelf or guide: inspect door-clearance.json.");
                 report.checks.Add("201 door sweep samples clear casing, shelves and upper/lower guides.");
@@ -189,6 +192,8 @@ public static class ConveyorValidation
         {
             string error=SessionState.GetString(ErrorKey,"");
             Require(error.Length==0,error);
+            if(cycle.machine.IsProcessing)Require(Vector3.Distance(cycle.machine.toolHead.position,cycle.machine.toolRest)<.001f,"Tool head did not return to original FBX machining position.");
+            if(cycle.machine.DoorIsOpen || cycle.machine.DoorIsMoving)Require(Vector3.Distance(cycle.machine.toolHead.position,cycle.machine.toolLoading)<.001f,"Door moved before tool head reached loading clearance.");
             Require(Vector3.Distance(cycle.robot.transform.position,robotBasePosition)<.0001f && Quaternion.Angle(cycle.robot.transform.rotation,robotBaseRotation)<.01f,"Robot pedestal moved during the cycle.");
             Require(EditorApplication.timeSinceStartup-roundStarted<180,"Cycle timed out.");
             if(conveyor.IsMoving)
@@ -238,6 +243,7 @@ public static class ConveyorValidation
         cycle.robot.ToggleDamage();
         var transforms=new List<Transform>(cycle.robot.GetComponentsInChildren<Transform>(true));
         transforms.Add(cycle.raw.transform);transforms.Add(cycle.machine.door);transforms.Add(cycle.machine.carriage);
+        if(cycle.machine.toolHead)transforms.Add(cycle.machine.toolHead);
         if(conveyor.treadMarkers!=null)transforms.AddRange(conveyor.treadMarkers.Where(t=>t));
         pausedTransforms=transforms.Where(t=>t).Distinct().ToArray();
         pausedPositions=pausedTransforms.Select(t=>t.localPosition).ToArray();

@@ -1,7 +1,7 @@
 {
     "unityVersion": "6000.6.0f1",
-    "startedUtc": "2026-10-14T12:21:55.3023985Z",
-    "finishedUtc": "2026-10-14T12:24:40.6679378Z",
+    "startedUtc": "2026-10-14T12:42:16.5357611Z",
+    "finishedUtc": "2026-10-14T12:45:13.6593669Z",
     "editorStartupLog": "",
     "passed": true,
     "completedCycles": 4,
@@ -14,6 +14,8 @@
         "Both original CAD attachments sit on a four-post grounded tool rack.",
         "All ten conveyor legs join the floor and five crossbeams; crossbeams meet the bed.",
         "Door upper/lower guides have visible rigid mounting spacers.",
+        "Tool rack base, uprights and shelves clear the finished-part table.",
+        "Chamber column, spindle, tool and fixture match original FBX positions; external factory layout is preserved.",
         "201 door sweep samples clear casing, shelves and upper/lower guides.",
         "Cycle 1 completed; duplicate start ignored.",
         "Damage pauses delivery and belt; repair resumes.",
