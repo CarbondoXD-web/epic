@@ -308,11 +308,11 @@ public static class RobotGrabSetup
         if(EditorApplication.isPlayingOrWillChangePlaymode)return;
         var machine=GameObject.Find("Haas Mill - Open Loading Bay");
         if(!machine || GameObject.Find("Robot Loading Clearance Layout"))return;
+        if(machine.GetComponent<MachineOperationController>()){MachineAttachmentSetup.Apply();return;}
         Vector3 lateral=Quaternion.Euler(0,-65,0)*Vector3.right;
         foreach(var part in machine.GetComponentsInChildren<Transform>())
         {
             if(part.name=="37-4532-DEF-DOOR")part.position+=lateral*.45f;
-            if(part.name=="CONV-SHELF-VF-SM" || part.name=="CONV-HOLDER-VF-XS")part.position+=lateral*.85f;
         }
         Vector3 shift=new Vector3(-.18f,0,.16f);
         GameObject.Find("Finished Parts Table").transform.position+=shift;

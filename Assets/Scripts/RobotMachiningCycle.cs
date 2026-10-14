@@ -133,6 +133,7 @@ public class RobotMachiningCycle : MonoBehaviour
         yield return robot.WorkflowFingers(false);
         Attach(raw.transform);
         yield return Move(sourcePosition+Vector3.up*.18f,.5f);
+        Vector3 machineOutward=Quaternion.Euler(0,-65,0)*Vector3.forward;
         if(machine){Message="机床开门，准备上料…";yield return machine.OpenDoor();}
         Message="2/4 正在将原料送入机床…";
         yield return Move(robot.machineApproach.position,.7f);
@@ -148,7 +149,7 @@ public class RobotMachiningCycle : MonoBehaviour
         yield return Move(machinePosition+Vector3.up*.04f,.4f);
         yield return Move(robot.machineApproach.position,.65f);
         if(moveFailed){yield return Recover();yield break;}
-        yield return Move(robot.machineHold.position,.4f);
+        yield return Move(robot.machineHold.position+machineOutward*.35f,.7f);
         if(moveFailed){yield return Recover();yield break;}
         if(machine){Message="机械臂已退出：关门、工作台移入加工…";yield return machine.Process(raw.transform);}
         Debug.Log("[Machining] LOADED: raw="+raw.transform.position);
@@ -179,8 +180,11 @@ public class RobotMachiningCycle : MonoBehaviour
         Attach(finished);
         yield return Move(machinePosition+Vector3.up*.04f,.45f);
         yield return Move(robot.machineApproach.position,.7f);
-        yield return Move(robot.machineHold.position,.4f);
-        yield return Move(finishedPosition+Vector3.up*.25f,.85f);
+        yield return Move(robot.machineHold.position+machineOutward*.35f,.7f);
+        Vector3 attachmentOutward=machineOutward;
+        // Leave the bay along its normal before moving across the original
+        // machine-mounted tray. Carry high, then descend on the outboard slot.
+        yield return Move(finishedPosition+Vector3.up*.75f,.85f);
         if(moveFailed){yield return Recover();yield break;}
         // Keep the shaft horizontal, but roll the wrist around its axis so the
         // palm stays above it and both jaws open sideways across the tray.
@@ -189,7 +193,7 @@ public class RobotMachiningCycle : MonoBehaviour
         Vector3 palm=Vector3.ProjectOnPlane(placement*localPalmDirection,shaftAxis).normalized;
         float roll=Vector3.SignedAngle(palm,Vector3.up,shaftAxis);
         robot.SetGripOrientation(Quaternion.AngleAxis(roll,shaftAxis)*placement);
-        yield return Move(finishedPosition+Vector3.up*.25f,.7f);
+        yield return Move(finishedPosition+Vector3.up*.75f,.7f);
         RobotGrabController.ProjectionRange(finished,robot.grip.position,Vector3.up,out float partBottom,out _);
         finishedPosition.y=tableTop+.003f-partBottom;
         yield return Move(finishedPosition,.6f);
@@ -221,7 +225,8 @@ public class RobotMachiningCycle : MonoBehaviour
         // Keep the tool on the outside route instead of interpolating all joint
         // angles at once, which bows the tool path back through the side shelf.
         if(machine){Message="机械臂已避开门板，机床关门…";yield return machine.Finish();}
-        yield return Move(homeGripPosition,.9f);
+        yield return Move(homeGripPosition+attachmentOutward*.25f,.8f);
+        yield return Move(homeGripPosition,.6f);
         if(moveFailed){yield return Recover();yield break;}
 #if UNITY_EDITOR
         checkingReturn=false;

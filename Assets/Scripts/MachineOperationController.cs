@@ -11,6 +11,8 @@ public class MachineOperationController : MonoBehaviour
     public Renderer indicator;
     [Min(.2f)] public float doorSeconds=.85f, tableSeconds=.7f;
     public Vector3 doorClosed, doorOpen, carriageLoading, carriageProcessing;
+    public bool doorHasClearanceStage;
+    public Vector3 doorClearance;
     public bool DoorIsOpen { get; private set; }
     public bool DoorIsMoving { get; private set; }
     public bool TableIsLoading { get; private set; } = true;
@@ -54,7 +56,8 @@ public class MachineOperationController : MonoBehaviour
         if(DoorIsOpen)yield break;
         if(toolHead)yield return Slide(toolHead,toolLoading,toolSeconds);
         DoorIsMoving=true;
-        yield return Slide(door,doorOpen,doorSeconds);
+        if(doorHasClearanceStage)yield return Slide(door,doorClearance,doorSeconds*.21875f);
+        yield return Slide(door,doorOpen,doorSeconds*(doorHasClearanceStage ? .78125f : 1));
         DoorIsMoving=false;DoorIsOpen=true;
         Debug.Log("[Machine] Door open; loading enabled.");
     }
@@ -85,7 +88,15 @@ public class MachineOperationController : MonoBehaviour
     {
         DoorIsMoving=true;
         DoorIsOpen=false;
-        yield return Slide(door,doorClosed,doorSeconds);
+        if(doorHasClearanceStage)yield return Slide(door,doorClearance,doorSeconds*.78125f);
+        yield return Slide(door,doorClosed,doorSeconds*(doorHasClearanceStage ? .21875f : 1));
         DoorIsMoving=false;
+    }
+    public Vector3 DoorSweepPosition(float fraction)
+    {
+        if(!doorHasClearanceStage)return Vector3.Lerp(doorClosed,doorOpen,fraction);
+        float first=Vector3.Distance(doorClosed,doorClearance);
+        float split=first/(first+Vector3.Distance(doorClearance,doorOpen));
+        return fraction<split?Vector3.Lerp(doorClosed,doorClearance,fraction/split):Vector3.Lerp(doorClearance,doorOpen,(fraction-split)/(1-split));
     }
 }

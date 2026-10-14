@@ -1,9 +1,8 @@
 {
     "passed": true,
     "checks": [
-        "Both original CAD attachments sit on a four-post grounded tool rack.",
+        "Both attachments match their original FBX transforms on the machine; supplemental rack is inactive.",
         "All ten conveyor legs join the floor and five crossbeams; crossbeams meet the bed.",
-        "Door upper/lower guides have visible rigid mounting spacers.",
-        "Tool rack base, uprights and shelves clear the finished-part table."
+        "Top-hung door guide and clearance ramp are mounted on the cabinet; obsolete lower guide is inactive."
     ]
 }

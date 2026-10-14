@@ -26,10 +26,10 @@ Game 窗口取消勾选 `Low Resolution Aspect Ratios`，避免低分辨率预�
 
 项目迁移自 [scy8848/EPIC](https://github.com/scy8848/EPIC)，包含原料输送带两侧导向轨道和带面移动同步修正。实现及验证范围见 `RobotGrab_README.md`。
 
-加工仓门沿独立的外置上下导轨平移，行程 1.05 米，开合各约 1.6 秒。侧面托架避开门板停靠区域；五次缓动使起止速度和加速度均为零。门完全打开后才允许上料，机械臂退出后才关门，工作台回位后才再次开门。选择 `Tools > EPIC > Show Chamber Door Dynamic Preview` 可从机床正面观看连续开门、上料、加工、取件和关门过程。
+加工仓门采用顶挂避让路线：先向外和向上各退让 200 mm，再向远离原装附件的一侧滑动 700 mm，开合各约 1.6 秒。五次缓动使起止速度和加速度均为零。门完全打开后才允许上料，机械臂退出至门外等待点后才关门，工作台回位后才再次开门。选择 `Tools > EPIC > Show Chamber Door Dynamic Preview` 可从机床正面观看连续开门、上料、加工、取件和关门过程。
 
-机床左侧两个 CAD 附件装到四立柱落地工具架上，分别由上下层托板承托；工具架位于仓门停靠区之外。输送线十根支腿连接到五根横梁，横梁连接带床，消除原来的悬空支撑间隙。仓门上下导轨增加六个可见固定支架，与机壳连接。结构检查报告见 `docs/structure-validation.json`。`FactoryStructureSetup.ApplyBatch` 可重复重建这些支撑，保留原附件模型且不会叠加对象。
+机床左侧两个原装附件 `CONV-SHELF-VF-SM` 和 `CONV-HOLDER-VF-XS` 按 FBX 的原始位置、旋转和比例恢复到机床上。此前添加的独立工具架与下门轨停用，保留对象供 Undo/恢复；所有安装工具均不再将原装附件向外移动。输送线十根支腿与五根横梁、带床保持连接，顶挂门轨与避让段由机壳支架固定。结构检查报告见 `docs/structure-validation.json`，`MachineAttachmentSetup.ApplyBatch` 可重复恢复附件并适配门轨；重复执行不会叠加对象。
 
-加工仓内部已恢复用户提供的 `Haas Mill (1).fbx` 原始主轴立柱、主轴、刀具、罩壳和夹具位置。该文件与项目的 `Assets/Models/Haas Mill Latest.fbx` 内容相同，SHA-256 为 `e8c359976078c593bdb1388f512824d0d44821c72146e993543f64641d11182e`，无需重复模型资源。加工时主轴头回到原始位置，上下料时沿 Z 轴临时上退 250 mm；取放点对齐原始夹具。轨道、机械臂底座、外部工具架与四阶段工作流程保持不变。恢复校验见 `docs/original-chamber-validation.json`，可用 `Tools > EPIC > Restore Original Chamber Internals` 重复恢复。
+加工仓内部已恢复用户提供的 `Haas Mill (1).fbx` 原始主轴立柱、主轴、刀具、罩壳和夹具位置。该文件与项目的 `Assets/Models/Haas Mill Latest.fbx` 内容相同，SHA-256 为 `e8c359976078c593bdb1388f512824d0d44821c72146e993543f64641d11182e`，无需重复模型资源。加工时主轴头回到原始位置，上下料时沿 Z 轴临时上退 250 mm；取放点对齐原始夹具。轨道、机械臂底座、成品台和四阶段工作流程保持不变。携料时先退出机床再从附件外侧高位经过，在原成品台的外侧槽位放料，原台面位置不变。恢复校验见 `docs/original-chamber-validation.json`，可用 `Tools > EPIC > Restore Original Chamber Internals` 重复恢复仓内组件。
 
 已通过 Unity 6000.6.0f1 的四轮实际加工循环、故障暂停/恢复及机床和输送带碰撞检查，第四轮专门检查开门中途故障暂停和恢复。门板整个行程另以 201 个采样点检查机壳、侧面托架及上下导轨。报告见 `docs/conveyor-validation.json` 和 `docs/door-clearance.json`。Windows 首次导入或自动验证可运行 `Tools/Validate-Unity.ps1`，自动处理该编辑器版本中渲染管线转换器脚本缺少元数据的问题。

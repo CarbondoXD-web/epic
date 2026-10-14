@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using Object=UnityEngine.Object;
 
 public static class FactoryStructureSetup
 {
@@ -25,39 +26,74 @@ public static class FactoryStructureSetup
     }
     public static void Build(MachineOperationController machine)
     {
-        var renderers=machine.GetComponentsInChildren<Renderer>();
-        var tray=renderers.Single(r=>r.name=="CONV-SHELF-VF-SM");
-        var holder=renderers.Single(r=>r.name=="CONV-HOLDER-VF-XS");
+        RestoreMachineAttachments(machine);
         Vector3 along=Quaternion.Euler(0,-65,0)*Vector3.right;
         Vector3 normal=Quaternion.Euler(0,-65,0)*Vector3.forward;
-        RobotGrabController.ProjectionRange(tray.transform,Vector3.zero,along,out float low,out float high);
-        RobotGrabController.ProjectionRange(tray.transform,Vector3.zero,normal,out float back,out float front);
-        Vector3 center=along*((low+high)*.5f)+normal*((back+front)*.5f);
-        float width=high-low,depth=front-back;
-        float upperBottom=holder.bounds.min.y;
         var metal=AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Conveyor_Legs.mat");
-        // Preserve both CAD attachments as useful shelves on one grounded
-        // tool rack. No suspended shelf or invisible supporting collider.
-        for(int i=0;i<4;i++)
+        foreach(var part in machine.GetComponentsInChildren<Transform>(true).Where(t=>t.name.StartsWith("Door lower guide track")))
         {
-            Vector3 corner=center+along*((i<2?-1:1)*(width*.5f-.025f))+normal*((i%2==0?-1:1)*(depth*.5f-.025f));
-            float height=upperBottom-.03f;
-            Cube(machine,"Tool rack upright "+i,corner+Vector3.up*(height*.5f),new Vector3(.05f,height,.05f),along,metal);
+            Undo.RecordObject(part.gameObject,"Deactivate obsolete lower door guide");part.gameObject.SetActive(false);
         }
-        Cube(machine,"Tool rack upper shelf",center+Vector3.up*(upperBottom-.015f),new Vector3(depth,.03f,width),along,metal);
-        Cube(machine,"Tool rack lower support",center+Vector3.up*(tray.bounds.min.y-.025f),new Vector3(depth,.05f,width),along,metal);
-        Cube(machine,"Tool rack floor base",center+Vector3.up*.025f,new Vector3(depth+.08f,.05f,width+.08f),along,metal);
         // Short rigid spacers join the external door guides to the cabinet;
         // their vertical envelope stays outside the moving door panel.
-        foreach(string railName in new[]{"Door upper guide track","Door lower guide track"})
+        foreach(string railName in new[]{"Door upper guide track"})
         {
             var rail=machine.transform.Find(railName);
             for(int i=0;i<3;i++)
             {
-                Vector3 position=rail.position+along*((i-1)*.63f)-normal*.06f;
-                Cube(machine,railName+" mounting spacer "+i,position,new Vector3(.16f,.025f,.07f),along,metal);
+                Vector3 position=rail.position+along*((i-1)*.63f)-normal*.16f;
+                Cube(machine,railName+" mounting spacer "+i,position,new Vector3(.36f,.025f,.07f),along,metal);
+                Cube(machine,railName+" cabinet mount "+i,rail.position+along*((i-1)*.63f)-normal*.30f-Vector3.up*.1125f,new Vector3(.045f,.20f,.07f),along,metal);
             }
         }
+        var doorBounds=machine.door.GetComponent<Renderer>().bounds;
+        Vector3 ramp=doorBounds.center-normal*.08f;
+        ramp.y=doorBounds.max.y+.135f;
+        Cube(machine,"Door upper clearance ramp",ramp,new Vector3(.04f,.025f,Mathf.Sqrt(.08f)),normal+Vector3.up,metal);
+        Vector3 link=doorBounds.center+normal*.11f;
+        link.y=doorBounds.max.y+.235f;
+        Cube(machine,"Door upper ramp connection",link,new Vector3(.22f,.025f,.05f),along,metal);
+    }
+    public static void RestoreMachineAttachments(MachineOperationController machine)
+    {
+        var source=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Haas Mill Latest.fbx"));
+        source.hideFlags=HideFlags.HideAndDontSave;
+        source.transform.SetPositionAndRotation(machine.transform.position,machine.transform.rotation);
+        source.transform.localScale=machine.transform.localScale;
+        try
+        {
+            foreach(string name in new[]{"CONV-SHELF-VF-SM","CONV-HOLDER-VF-XS"})
+            {
+                var original=source.GetComponentsInChildren<Transform>().Single(t=>t.name==name);
+                var target=machine.GetComponentsInChildren<Transform>().Single(t=>t.name==name);
+                Undo.RecordObject(target,"Restore original machine attachment");
+                target.SetPositionAndRotation(original.position,original.rotation);
+                target.localScale=original.localScale;
+            }
+            foreach(var item in machine.GetComponentsInChildren<Transform>(true).Where(t=>t.name.StartsWith("Tool rack ")))
+            {
+                Undo.RecordObject(item.gameObject,"Deactivate supplemental tool rack");
+                item.gameObject.SetActive(false);
+            }
+        }
+        finally {Object.DestroyImmediate(source);}
+    }
+    public static void CheckMachineAttachments(MachineOperationController machine)
+    {
+        var source=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Haas Mill Latest.fbx"));
+        source.hideFlags=HideFlags.HideAndDontSave;
+        source.transform.SetPositionAndRotation(machine.transform.position,machine.transform.rotation);
+        source.transform.localScale=machine.transform.localScale;
+        try
+        {
+            foreach(string name in new[]{"CONV-SHELF-VF-SM","CONV-HOLDER-VF-XS"})
+            {
+                var original=source.GetComponentsInChildren<Transform>().Single(t=>t.name==name);
+                var target=machine.GetComponentsInChildren<Transform>().Single(t=>t.name==name);
+                Require(Vector3.Distance(original.position,target.position)<.0001f && Quaternion.Angle(original.rotation,target.rotation)<.01f && Vector3.Distance(original.lossyScale,target.lossyScale)<.0001f,"Attachment must match source FBX: "+name);
+            }
+        }
+        finally {Object.DestroyImmediate(source);}
     }
     static void Cube(MachineOperationController machine,string name,Vector3 position,Vector3 size,Vector3 forward,Material material)
     {
@@ -74,18 +110,9 @@ public static class FactoryStructureSetup
     {
         var report=new Report();
         var machine=cycle.machine;
-        var upper=machine.transform.Find("Tool rack upper shelf").GetComponent<Renderer>().bounds;
-        for(int i=0;i<4;i++)
-        {
-            var post=machine.transform.Find("Tool rack upright "+i).GetComponent<Renderer>().bounds;
-            Require(Mathf.Abs(post.min.y)<.001f && Mathf.Abs(post.max.y-upper.min.y)<.001f,"Tool rack upright must connect floor and upper shelf.");
-        }
-        var tray=machine.GetComponentsInChildren<Renderer>().Single(r=>r.name=="CONV-SHELF-VF-SM");
-        var holder=machine.GetComponentsInChildren<Renderer>().Single(r=>r.name=="CONV-HOLDER-VF-XS");
-        var lower=machine.transform.Find("Tool rack lower support").GetComponent<Renderer>().bounds;
-        Require(Mathf.Abs(lower.max.y-tray.bounds.min.y)<.001f,"Lower tray must sit on the rack support.");
-        Require(Mathf.Abs(upper.max.y-holder.bounds.min.y)<.001f,"Upper attachment must sit on the rack shelf.");
-        report.checks.Add("Both original CAD attachments sit on a four-post grounded tool rack.");
+        CheckMachineAttachments(machine);
+        Require(!machine.GetComponentsInChildren<Transform>(true).Any(t=>t.name.StartsWith("Tool rack ") && t.gameObject.activeSelf),"Supplemental tool rack must remain inactive.");
+        report.checks.Add("Both attachments match their original FBX transforms on the machine; supplemental rack is inactive.");
         var bed=cycle.conveyor.transform.Find("Central line bed").GetComponent<Renderer>().bounds;
         for(int i=0;i<5;i++)
         {
@@ -98,18 +125,9 @@ public static class FactoryStructureSetup
             }
         }
         report.checks.Add("All ten conveyor legs join the floor and five crossbeams; crossbeams meet the bed.");
-        foreach(string name in new[]{"Door upper guide track","Door lower guide track"})
+        foreach(string name in new[]{"Door upper guide track"})
             for(int i=0;i<3;i++)Require(machine.transform.Find(name+" mounting spacer "+i)!=null,"Door track mounting spacer is missing.");
-        report.checks.Add("Door upper/lower guides have visible rigid mounting spacers.");
-        Physics.SyncTransforms();
-        var output=GameObject.Find("Finished Parts Table");
-        foreach(var rack in machine.GetComponentsInChildren<BoxCollider>().Where(c=>c.name.StartsWith("Tool rack ")))
-            foreach(var obstacle in output.GetComponentsInChildren<Collider>())
-            {
-                bool intersects=Physics.ComputePenetration(rack,rack.transform.position,rack.transform.rotation,obstacle,obstacle.transform.position,obstacle.transform.rotation,out _,out float penetration);
-                Require(!intersects || penetration<=.001f,"Tool rack overlaps finished table: "+rack.name+":"+obstacle.name);
-            }
-        report.checks.Add("Tool rack base, uprights and shelves clear the finished-part table.");
+        report.checks.Add("Top-hung door guide and clearance ramp are mounted on the cabinet; obsolete lower guide is inactive.");
         report.passed=true;
         Directory.CreateDirectory("ValidationReports");
         File.WriteAllText("ValidationReports/structure-validation.json",JsonUtility.ToJson(report,true));

@@ -232,6 +232,7 @@ public static class ConveyorValidation
                 Require(cycle.CompletedCount==initialCount+round+1,"Cycle recovered or ran more than once instead of completing.");
                 Require(!cycle.machine.IsBusy && !cycle.robot.IsHolding && cycle.finished.gameObject.activeInHierarchy,"Cycle did not release the finished part or clear its busy state.");
                 report.completedCycles=round+1;
+                Require(report.contacts.Count==0,"Collision contacts detected during the cycle; inspect this report before continuing.");
                 report.checks.Add("Cycle "+(round+1)+" completed; duplicate start ignored.");
                 if(++round<4)StartRound();else Finish(null);
             }

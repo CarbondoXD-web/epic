@@ -15,7 +15,7 @@ public static class MachineDoorSetup
     }
     public static SweepReport CheckSweep(MachineOperationController machine)
     {
-        var report=new SweepReport {samples=201,travelMetres=Vector3.Distance(machine.doorClosed,machine.doorOpen)};
+        var report=new SweepReport {samples=201,travelMetres=machine.doorHasClearanceStage?Vector3.Distance(machine.doorClosed,machine.doorClearance)+Vector3.Distance(machine.doorClearance,machine.doorOpen):Vector3.Distance(machine.doorClosed,machine.doorOpen)};
         var temporary=new GameObject("Temporary door sweep probe");
         temporary.hideFlags=HideFlags.HideAndDontSave;
         temporary.transform.position=Vector3.one*1000;
@@ -27,9 +27,14 @@ public static class MachineDoorSetup
         {
             for(int i=0;i<report.samples;i++)
             {
-                machine.door.position=Vector3.Lerp(machine.doorClosed,machine.doorOpen,i/(float)(report.samples-1));
+                machine.door.position=machine.DoorSweepPosition(i/(float)(report.samples-1));
                 Physics.SyncTransforms();
-                foreach(var obstacle in machine.GetComponentsInChildren<Collider>())
+                var obstacles=new System.Collections.Generic.List<Collider>(machine.GetComponentsInChildren<Collider>());
+                var conveyor=Object.FindFirstObjectByType<ConveyorFeedController>();
+                if(conveyor)obstacles.AddRange(conveyor.GetComponentsInChildren<Collider>());
+                var output=GameObject.Find("Finished Parts Table");
+                if(output)obstacles.AddRange(output.GetComponentsInChildren<Collider>());
+                foreach(var obstacle in obstacles)
                 {
                     if(obstacle.transform.IsChildOf(machine.door))continue;
                     if(Physics.ComputePenetration(probe,machine.door.position,machine.door.rotation,obstacle,obstacle.transform.position,obstacle.transform.rotation,out _,out float depth) && depth>.001f)
@@ -62,41 +67,33 @@ public static class MachineDoorSetup
         Vector3 travel=Quaternion.Euler(0,-65,0)*Vector3.right;
         // Fixed factory coordinates make repeated setup idempotent.
         machine.doorClosed=new Vector3(1.1860356f,1.0051379f,-.74156696f)+normal*.10f;
-        machine.doorOpen=machine.doorClosed+travel*1.05f;
+        machine.doorHasClearanceStage=true;
+        machine.doorClearance=machine.doorClosed+normal*.20f+Vector3.up*.20f;
+        machine.doorOpen=machine.doorClearance-travel*.70f;
         machine.door.position=machine.doorClosed;
         machine.doorSeconds=1.6f;
         var bounds=machine.door.GetComponent<Renderer>().bounds;
         RobotGrabController.ProjectionRange(machine.door,Vector3.zero,travel,out float min,out float max);
         var metal=AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Conveyor_Legs.mat");
-        // Clear a real parking pocket for the sliding panel, including the
-        // robot/finished-part withdrawal path beside the loading aperture.
-        foreach(var renderer in machine.GetComponentsInChildren<Renderer>())
-        {
-            Vector3 original;
-            if(renderer.name=="CONV-SHELF-VF-SM")original=new Vector3(.7842f,1.3825f,1.3197f);
-            else if(renderer.name=="CONV-HOLDER-VF-XS")original=new Vector3(.8476f,2.1196f,1.2902f);
-            else continue;
-            renderer.transform.position+=original+travel*.32f-renderer.bounds.center;
-        }
-        for(int i=0;i<2;i++)
+        for(int i=0;i<1;i++)
         {
             string name=i==0?"Door upper guide track":"Door lower guide track";
             var existing=machine.transform.Find(name);
             var rail=existing?existing.gameObject:GameObject.CreatePrimitive(PrimitiveType.Cube);
             if(!existing){rail.name=name;rail.transform.SetParent(machine.transform,true);Undo.RegisterCreatedObjectUndo(rail,"Create chamber door guide");}
-            Vector3 center=bounds.center+travel*.525f;
-            center.y=i==0?bounds.max.y+.035f:bounds.min.y-.035f;
+            Vector3 center=bounds.center+normal*.20f+Vector3.up*.20f-travel*.35f;
+            center.y=bounds.max.y+.235f;
             rail.transform.SetPositionAndRotation(center,Quaternion.LookRotation(travel));
             rail.transform.localScale=Vector3.one;
             Vector3 scale=rail.transform.lossyScale;
-            rail.transform.localScale=new Vector3(.04f/scale.x,.03f/scale.y,(max-min+1.05f+.08f)/scale.z);
+            rail.transform.localScale=new Vector3(.04f/scale.x,.03f/scale.y,(max-min+.70f+.08f)/scale.z);
             rail.GetComponent<Renderer>().sharedMaterial=metal;
         }
         FactoryStructureSetup.Build(machine);
         EditorUtility.SetDirty(machine);
         EditorSceneManager.MarkSceneDirty(machine.gameObject.scene);
         EditorSceneManager.SaveScene(machine.gameObject.scene);
-        Debug.Log("[Door setup] Door slides 1.05m on an exterior track plane; duration=1.6s.");
+        Debug.Log("[Door setup] Door withdraws 0.20m, then slides 0.70m away from original machine attachments; duration=1.6s.");
     }
     public static void InspectBatch()
     {

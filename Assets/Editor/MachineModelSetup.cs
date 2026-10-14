@@ -37,7 +37,6 @@ public static class MachineModelSetup
      }).ToArray();
      var collider=renderer.gameObject.AddComponent<MeshCollider>();collider.sharedMesh=renderer.GetComponent<MeshFilter>().sharedMesh;
    }
-   foreach(var t in nodes.Where(t=>t && (t.name=="CONV-SHELF-VF-SM" || t.name=="CONV-HOLDER-VF-XS")))t.position+=heading*Vector3.right*.85f;
    var control=machine.AddComponent<MachineOperationController>();control.robot=cycle.robot;
    control.door=nodes.First(t=>t.name=="37-4532-DEF-DOOR");
    control.doorClosed=control.door.position-heading*Vector3.right*(.442f*1.4f);
