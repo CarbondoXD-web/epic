@@ -33,14 +33,16 @@ public static class FactoryConveyorLayout
         if(oldModel)oldModel.gameObject.SetActive(false); // Keep original CAD data recoverable.
         foreach(Transform t in conveyor.transform)
             if(t.name=="Adjustable support leg")t.gameObject.SetActive(false);
-        const float length=3.05f,width=.30f;
+        const float length=2.95f,width=.30f;
         RobotGrabController.ProjectionRange(cycle.raw.transform,Vector3.zero,Vector3.up,out float top,out _);
-        Vector3 center=conveyor.pickupPosition-forward*1.325f;center.y=top-.012f;
+        Vector3 center=conveyor.pickupPosition-forward*1.375f;center.y=top-.012f;
         var surface=conveyor.beltSurface;
         surface.SetPositionAndRotation(center,Quaternion.LookRotation(forward));
         surface.localScale=new Vector3(width,.024f,length);
         var metal=AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Conveyor_Legs.mat");
-        Piece(conveyor,"Central line bed",center-Vector3.up*.065f,new Vector3(width+.06f,.10f,length),forward,metal);
+        // The final 550 mm uses a shallow frame above the base swing envelope.
+        Piece(conveyor,"Central line bed",center-forward*.275f-Vector3.up*.065f,new Vector3(width+.06f,.10f,length-.55f),forward,metal);
+        Piece(conveyor,"Pickup nose bed",center+forward*(length*.5f-.275f)-Vector3.up*.045f,new Vector3(width+.06f,.06f,.55f),forward,metal);
         for(int i=0;i<5;i++)
         {
             // Leave the final 550 mm cantilevered beyond the last frame so
@@ -56,7 +58,7 @@ public static class FactoryConveyorLayout
                 Piece(conveyor,"Central line leg "+i+" "+side,new Vector3(foot.x,height*.5f,foot.z),new Vector3(.04f,height,.04f),forward,metal);
             }
         }
-        // Existing rail objects are updated, preserving the 200 mm open
+        // Existing rail objects are updated, preserving the 300 mm open
         // gripping zone. No second rail set or invisible obstacle is created.
         ConveyorSetup.InstallGuideRails();
         for(int i=0;i<conveyor.treadMarkers.Length;i++)
@@ -77,7 +79,7 @@ public static class FactoryConveyorLayout
         EditorUtility.SetDirty(conveyor);EditorUtility.SetDirty(demo);
         EditorSceneManager.MarkSceneDirty(cycle.gameObject.scene);
         EditorSceneManager.SaveScene(cycle.gameObject.scene);
-        Debug.Log("[Factory layout] Central feed line: length=3.05m, route=2.65m, pickup="+conveyor.pickupPosition+"; robot base unchanged.");
+        Debug.Log("[Factory layout] Central feed line: length=2.95m, route=2.65m, pickup="+conveyor.pickupPosition+"; robot base unchanged.");
     }
     static void Piece(ConveyorFeedController conveyor,string name,Vector3 position,Vector3 size,Vector3 forward,Material material)
     {

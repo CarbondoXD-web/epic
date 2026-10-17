@@ -23,6 +23,7 @@ public static class ConveyorValidation
         public string editorStartupLog;
         public bool passed;
         public int completedCycles;
+        public List<float> pickupClearanceMetres=new List<float>();
         public int completedCollisionChecks;
         public bool collisionSelfCheckPassed;
         public List<string> checks=new List<string>();
@@ -34,6 +35,7 @@ public static class ConveyorValidation
     static ConveyorFeedController conveyor;
     static Phase phase;
     static int round, initialCount;
+    static bool checkedPickupGrip;
     static double roundStarted, pauseStarted;
     static Transform[] pausedTransforms;
     static Vector3[] pausedPositions;
@@ -136,9 +138,9 @@ public static class ConveyorValidation
             Require(box && box.enabled && !box.isTrigger,"Guide rail must have a solid BoxCollider: "+name);
             float end=Vector3.Dot(rail.position-conveyor.feedStart,forward)+rail.TransformVector(Vector3.forward).magnitude*.5f;
             float clearance=Vector3.Dot(conveyor.pickupPosition-conveyor.feedStart,forward)-end;
-            Require(clearance>=.199f,"Guide rail leaves less than 200 mm pickup clearance: "+name);
+            Require(clearance>=.299f,"Guide rail leaves less than 300 mm pickup clearance: "+name);
         }
-        report.checks.Add("Both solid guide rails exist once and preserve 200 mm pickup clearance.");
+        report.checks.Add("Both solid guide rails exist once and preserve 300 mm pickup clearance.");
         RobotGrabController.ProjectionRange(cycle.raw.transform,Vector3.zero,Vector3.up,out float bottom,out _);
         float beltTop=conveyor.beltSurface.position.y+conveyor.beltSurface.TransformVector(Vector3.up).magnitude*.5f;
         Require(Mathf.Abs(bottom-beltTop)<.003f,"Blank is floating above or penetrating the belt at the feed entrance.");
@@ -148,6 +150,7 @@ public static class ConveyorValidation
     static void StartRound()
     {
         Require(Vector3.Distance(cycle.raw.position,conveyor.feedStart)<.001f && !conveyor.IsReady,"Raw blank was not restaged at the feed entrance.");
+        checkedPickupGrip=false;
         roundStarted=EditorApplication.timeSinceStartup;
         phase=round==0?Phase.WaitComplete:round==1?Phase.WaitFeed:round==2?Phase.WaitSettle:Phase.WaitDoor;
         previousRaw=cycle.raw.position;
@@ -159,7 +162,7 @@ public static class ConveyorValidation
     static void ValidateCentralLayout()
     {
         var surface=conveyor.beltSurface;
-        Require(Mathf.Abs(surface.TransformVector(Vector3.forward).magnitude-3.05f)<.005f,"Central aisle belt must be 3.05 m long.");
+        Require(Mathf.Abs(surface.TransformVector(Vector3.forward).magnitude-2.95f)<.005f,"Central aisle belt must be 2.95 m long.");
         Vector3 forward=(conveyor.pickupPosition-conveyor.feedStart).normalized;
         Require(Vector3.Angle(forward,Quaternion.Euler(0,25,0)*Vector3.forward)<.1f,"Central line must run parallel to the machine frontage.");
         Require(Vector3.Distance(conveyor.pickupPosition,new Vector3(-.2250978f,1.3223505f,-.1678875f))<.005f,"Pickup station is not at the reference aisle location.");
@@ -171,7 +174,7 @@ public static class ConveyorValidation
             bool intersects=Physics.ComputePenetration(piece,piece.transform.position,piece.transform.rotation,obstacle,obstacle.transform.position,obstacle.transform.rotation,out _,out float depth);
             Require(!intersects || depth<=.001f,"Central conveyor intersects "+obstacle.name+": "+piece.name+" depth="+depth);
         }
-        report.checks.Add("3.05 m central line follows machine frontage; bed, rails and legs clear machine and output table.");
+        report.checks.Add("2.95 m central line follows machine frontage; bed, rails and legs clear machine and output table.");
     }
     static void Tick()
     {
@@ -206,6 +209,34 @@ public static class ConveyorValidation
                 float errorDistance=Mathf.Repeat(treadDistance-rawDistance+length*.5f,length)-length*.5f;
                 Require(Mathf.Abs(errorDistance)<.001f,"Belt tread and blank movement are out of sync.");
             }
+            if(!checkedPickupGrip && cycle.robot.IsHolding && cycle.raw.transform.parent==cycle.robot.grip && cycle.raw.position.y<conveyor.pickupPosition.y+.015f)
+            {
+                RobotGrabController.ProjectionRange(cycle.raw.transform,Vector3.zero,Vector3.up,out float blankBottom,out float blankTop);
+                foreach(var finger in cycle.robot.fingers)
+                {
+                    RobotGrabController.ProjectionRange(finger,Vector3.zero,Vector3.up,out float jawBottom,out float jawTop);
+                    Require(Mathf.Min(blankTop,jawTop)-Mathf.Max(blankBottom,jawBottom)>=.03f,"Raised pickup has less than 30 mm vertical jaw engagement.");
+                }
+                checkedPickupGrip=true;
+                report.checks.Add("Upper blank grasp retains at least 30 mm vertical jaw engagement.");
+                if(round==0)
+                {
+                    var camera=cycle.robot.viewCamera;
+                    var position=camera.transform.position;var rotation=camera.transform.rotation;
+                    try
+                    {
+                        camera.transform.position=conveyor.pickupPosition+new Vector3(-1.25f,.65f,-1.1f);
+                        camera.transform.LookAt(conveyor.pickupPosition+Vector3.up*.10f);
+                        FactoryConveyorLayout.Capture(camera,"ValidationReports/pickup-clearance.png");
+                    }
+                    finally {camera.transform.SetPositionAndRotation(position,rotation);}
+                }
+            }
+            if(cycle.PickupClearanceChecks>report.pickupClearanceMetres.Count)
+            {
+                report.pickupClearanceMetres.Add(cycle.MinimumPickupClearance);
+                Require(cycle.MinimumPickupClearance>=.04f,"Pickup leaves less than 40 mm robot/conveyor clearance.");
+            }
             previousRaw=cycle.raw.position;previousTread=conveyor.treadMarkers[0].position;
             if(phase==Phase.WaitFeed && conveyor.IsMoving && Vector3.Distance(cycle.raw.position,conveyor.feedStart)>.05f)Pause();
             else if(phase==Phase.WaitSettle && !conveyor.IsMoving && !conveyor.IsReady)Pause();
@@ -228,6 +259,7 @@ public static class ConveyorValidation
             }
             if(!cycle.robot.IsBusy)
             {
+                Require(checkedPickupGrip,"Pickup jaw engagement check was missed.");
                 Require(phase==Phase.WaitComplete,"Pause test phase was missed.");
                 Require(cycle.CompletedCount==initialCount+round+1,"Cycle recovered or ran more than once instead of completing.");
                 Require(!cycle.machine.IsBusy && !cycle.robot.IsHolding && cycle.finished.gameObject.activeInHierarchy,"Cycle did not release the finished part or clear its busy state.");
@@ -275,6 +307,7 @@ public static class ConveyorValidation
         string runtimeError=SessionState.GetString(ErrorKey,"");
         if(runtimeError.Length>0 && !report.failures.Contains(runtimeError))report.failures.Add(runtimeError);
         if(report.contacts.Count>0)report.failures.Add("Robot/workpiece collision contacts detected; inspect contacts in this report.");
+        if(report.pickupClearanceMetres.Count!=4)report.failures.Add("Expected four measured pickup clearance checks.");
         if(report.completedCollisionChecks!=4)report.failures.Add("Expected four completed full-cycle collision checks.");
         report.passed=report.completedCycles==4 && report.failures.Count==0;
         report.finishedUtc=DateTime.UtcNow.ToString("o");

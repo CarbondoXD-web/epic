@@ -21,7 +21,11 @@ public class RobotMachiningCycle : MonoBehaviour
     float tableTop,minimumWithdrawalGap;
     bool checkingWithdrawal;
 #if UNITY_EDITOR
-    bool checkingReturn;
+    bool checkingReturn, checkingPickup;
+    public int PickupClearanceChecks { get; private set; }
+    public float MinimumPickupClearance { get; private set; } = .10f;
+    string closestPickupPair;
+    BoxCollider[] pickupObstacles, pickupEnvelopes;
     MeshFilter[] armMeshes;
     MeshCollider[] armProbes;
     GameObject clearanceRoot;
@@ -59,6 +63,24 @@ public class RobotMachiningCycle : MonoBehaviour
             armProbes[i]=probe.AddComponent<MeshCollider>();
             armProbes[i].sharedMesh=armMeshes[i].sharedMesh;
             armProbes[i].convex=true;
+        }
+        if(conveyor)
+        {
+            pickupObstacles=conveyor.GetComponentsInChildren<BoxCollider>();
+            pickupEnvelopes=new BoxCollider[pickupObstacles.Length];
+            for(int i=0;i<pickupObstacles.Length;i++)
+            {
+                var source=pickupObstacles[i];
+                var envelope=new GameObject("Pickup 100 mm clearance envelope");
+                envelope.transform.SetParent(clearanceRoot.transform,false);
+                envelope.transform.position=Vector3.one*1100;
+                envelope.transform.localScale=source.transform.lossyScale;
+                var box=envelope.AddComponent<BoxCollider>();
+                box.center=source.center;
+                var scale=source.transform.lossyScale;
+                box.size=source.size+new Vector3(.20f/Mathf.Abs(scale.x),.20f/Mathf.Abs(scale.y),.20f/Mathf.Abs(scale.z));
+                pickupEnvelopes[i]=box;
+            }
         }
         // Verify the narrow-phase query with a known intersecting volume so a
         // missing/invalid convex shape cannot silently look collision-free.
@@ -127,18 +149,31 @@ public class RobotMachiningCycle : MonoBehaviour
         if(machine)machine.IsBusy=true;
         if(conveyor){Message="1/4 输送带送料中，机械臂等待…";yield return conveyor.Deliver();}
         Message=conveyor?"1/4 输送带已停，机械臂正在取料…":"1/4 正在从原料台取料…";
-        yield return Move(sourcePosition+Vector3.up*.18f,.65f);
-        yield return Move(raw.position,.55f);
+#if UNITY_EDITOR
+        checkingPickup=true;MinimumPickupClearance=.10f;closestPickupPair="at least 100 mm";
+#endif
+        // Grip the upper half of the 150 mm blank: the fingers stay farther
+        // from the belt and frame while retaining substantial jaw engagement.
+        Vector3 pickupGrip=sourcePosition+Vector3.up*.025f;
+        yield return Move(pickupGrip+Vector3.up*.24f,.75f);
+        yield return Move(pickupGrip,.75f);
         if(moveFailed){yield return Recover();yield break;}
         yield return robot.WorkflowFingers(false);
         Attach(raw.transform);
-        yield return Move(sourcePosition+Vector3.up*.18f,.5f);
+        // Preserve the off-centre grasp through loading so releasing the blank
+        // does not change its intended fixture position.
+        Vector3 rawGripOffset=robot.grip.position-raw.position;
+        yield return Move(pickupGrip+Vector3.up*.24f,.65f);
+#if UNITY_EDITOR
+        checkingPickup=false;PickupClearanceChecks++;
+        Debug.Log("[Machining] PICKUP CLEARANCE: "+MinimumPickupClearance.ToString("F4")+" m pair="+closestPickupPair);
+#endif
         Vector3 machineOutward=Quaternion.Euler(0,-65,0)*Vector3.forward;
         if(machine){Message="机床开门，准备上料…";yield return machine.OpenDoor();}
         Message="2/4 正在将原料送入机床…";
         yield return Move(robot.machineApproach.position,.7f);
-        yield return Move(machinePosition+Vector3.up*.04f,.7f);
-        yield return Move(machinePosition,.55f);
+        yield return Move(machinePosition+rawGripOffset+Vector3.up*.04f,.7f);
+        yield return Move(machinePosition+rawGripOffset,.55f);
         if(moveFailed){yield return Recover();yield break;}
         raw.transform.SetParent(null,true);
         raw.transform.SetPositionAndRotation(machinePosition,sourceRotation);
@@ -146,7 +181,7 @@ public class RobotMachiningCycle : MonoBehaviour
         raw.isKinematic=true;
         robot.SetWorkflowState(true,false);
         yield return robot.WorkflowFingers(true);
-        yield return Move(machinePosition+Vector3.up*.04f,.4f);
+        yield return Move(machinePosition+rawGripOffset+Vector3.up*.04f,.4f);
         yield return Move(robot.machineApproach.position,.65f);
         if(moveFailed){yield return Recover();yield break;}
         yield return Move(robot.machineHold.position+machineOutward*.35f,.7f);
@@ -277,6 +312,21 @@ public class RobotMachiningCycle : MonoBehaviour
                 if(!mesh.gameObject.activeInHierarchy)continue;
                 if(mesh.transform.IsChildOf(raw.transform) && raw.transform.parent!=robot.grip && !(conveyor && conveyor.IsMoving))continue;
                 if(mesh.transform.IsChildOf(finished) && finished.parent!=robot.grip)continue;
+                if(checkingPickup && mesh.transform.IsChildOf(robot.transform) && !mesh.transform.IsChildOf(raw.transform))
+                {
+                    for(int obstacle=0;obstacle<pickupObstacles.Length;obstacle++)
+                    {
+                        var hit=pickupObstacles[obstacle];
+                        if(!hit.enabled || !hit.gameObject.activeInHierarchy)continue;
+                        if(Physics.ComputePenetration(armProbes[meshIndex],mesh.transform.position,mesh.transform.rotation,pickupEnvelopes[obstacle],hit.transform.position,hit.transform.rotation,out Vector3 separation,out float depth))
+                        {
+                            // Expanding each box face by 100 mm is conservative
+                            // at corners: a passing gap guarantees real clearance.
+                            float gap=.10f-depth;
+                            if(gap<MinimumPickupClearance){MinimumPickupClearance=gap;closestPickupPair=mesh.name+":"+hit.name+" direction="+separation.ToString("F3");}
+                        }
+                    }
+                }
                 Bounds bounds=mesh.sharedMesh.bounds;
                 Vector3 size=Vector3.Scale(bounds.extents,mesh.transform.lossyScale);
                 size=new Vector3(Mathf.Abs(size.x),Mathf.Abs(size.y),Mathf.Abs(size.z));

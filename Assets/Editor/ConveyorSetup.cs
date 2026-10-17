@@ -101,12 +101,53 @@ public static class ConveyorSetup
         EditorSceneManager.MarkSceneDirty(control.gameObject.scene);
         Debug.Log("[ConveyorSetup] Guide rails updated. Save the scene to keep the change.");
     }
+    public static void ApplyPickupClearanceBatch()
+    {
+        EditorSceneManager.OpenScene("Assets/Scenes/RobotMachineGrab.unity");
+        InstallGuideRails();
+        var conveyor=Object.FindFirstObjectByType<ConveyorFeedController>();
+        var bed=conveyor.transform.Find("Central line bed");
+        var forward=(conveyor.pickupPosition-conveyor.feedStart).normalized;
+        // Keep the feed entrance and pickup fixed; remove the unused 100 mm
+        // overrun beyond pickup that encroached on the base swing envelope.
+        float top=conveyor.beltSurface.position.y+.012f;
+        var center=conveyor.pickupPosition-forward*1.375f;
+        center.y=top-.012f;
+        Undo.RecordObject(conveyor.beltSurface,"Trim pickup end overrun");
+        conveyor.beltSurface.position=center;
+        conveyor.beltSurface.localScale=new Vector3(.30f,.024f,2.95f);
+        Undo.RecordObject(bed,"Trim conveyor bed end overrun");
+        // A shallow end frame clears the base swing underneath the pickup;
+        // the deeper main bed still rests on the existing support stations.
+        bed.position=center-forward*.275f-Vector3.up*.065f;
+        bed.localScale=new Vector3(.36f,.10f,2.40f);
+        var nose=conveyor.transform.Find("Pickup nose bed");
+        if(!nose)
+        {
+            var item=GameObject.CreatePrimitive(PrimitiveType.Cube);
+            item.name="Pickup nose bed";
+            item.transform.SetParent(conveyor.transform,true);
+            Undo.RegisterCreatedObjectUndo(item,"Create shallow pickup frame");
+            nose=item.transform;
+        }
+        Undo.RecordObject(nose,"Align shallow pickup frame");
+        nose.SetPositionAndRotation(center+forward*1.20f-Vector3.up*.045f,bed.rotation);
+        nose.localScale=new Vector3(.36f,.06f,.55f);
+        nose.GetComponent<Renderer>().sharedMaterial=bed.GetComponent<Renderer>().sharedMaterial;
+        for(int i=0;i<conveyor.treadMarkers.Length;i++)
+        {
+            Undo.RecordObject(conveyor.treadMarkers[i],"Align belt tread");
+            conveyor.treadMarkers[i].position=center+forward*(i*2.95f/conveyor.treadMarkers.Length-2.95f*.5f)+Vector3.up*.014f;
+        }
+        EditorSceneManager.MarkSceneDirty(conveyor.gameObject.scene);
+        EditorSceneManager.SaveScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
+    }
     static void AddGuideRails(ConveyorFeedController control)
     {
         Vector3 direction=control.pickupPosition-control.feedStart;
         direction.y=0;
         float distance=direction.magnitude;
-        const float pickupClearance=.20f, thickness=.02f, height=.04f;
+        const float pickupClearance=.30f, thickness=.02f, height=.04f;
         if(distance<=pickupClearance)return;
         direction.Normalize();
         Vector3 side=Vector3.Cross(Vector3.up,direction);
