@@ -188,11 +188,11 @@ public class RobotMachiningCycle : MonoBehaviour
         if(moveFailed){yield return Recover();yield break;}
         if(machine){Message="机械臂已退出：关门、工作台移入加工…";yield return machine.Process(raw.transform);}
         Debug.Log("[Machining] LOADED: raw="+raw.transform.position);
-        for(float t=0;t<3;t+=Time.deltaTime)
+        for(float t=0;t<3;t+=WorkflowTiming.DeltaTime)
         {
             yield return Pause();
             Message="3/4 机床加工中："+Mathf.RoundToInt(t/3*100)+"%";
-            if(spindle)spindle.Rotate(Vector3.up,720*Time.deltaTime,Space.World);
+            if(spindle)spindle.Rotate(Vector3.up,720*WorkflowTiming.DeltaTime,Space.World);
             yield return null;
         }
         yield return Pause();

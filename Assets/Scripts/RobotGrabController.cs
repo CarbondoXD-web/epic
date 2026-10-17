@@ -121,7 +121,7 @@ public class RobotGrabController : MonoBehaviour
             target[i]=start[i]+fingers[i].parent.InverseTransformVector(outward*Mathf.Max(0,partOuter+.020f-fingerInner));
         }
         const float releaseDuration=.28f/MotionSpeedMultiplier;
-        for(float t=0;t<releaseDuration;t+=Time.deltaTime)
+        for(float t=0;t<releaseDuration;t+=WorkflowTiming.DeltaTime)
         {
             yield return WaitForRepair();
             for(int i=0;i<fingers.Length;i++)fingers[i].localPosition=Vector3.Lerp(start[i],target[i],Mathf.SmoothStep(0,1,t/releaseDuration));
@@ -245,7 +245,7 @@ public class RobotGrabController : MonoBehaviour
         // immediately while only the position follows the timed trajectory.
         duration=Mathf.Max(duration,Quaternion.Angle(startOrientation,targetOrientation)/75f);
         duration/=MotionSpeedMultiplier;
-        for (float elapsed = 0; elapsed < duration; elapsed += Time.deltaTime)
+        for (float elapsed = 0; elapsed < duration; elapsed += WorkflowTiming.DeltaTime)
         {
             yield return WaitForRepair();
             float phase=Mathf.SmoothStep(0,1,elapsed/duration);
@@ -333,7 +333,7 @@ public class RobotGrabController : MonoBehaviour
         float duration=1f;
         for(int i=0;i<joints.Length;i++)duration=Mathf.Max(duration,Quaternion.Angle(start[i],home[i])/60f);
         duration/=MotionSpeedMultiplier;
-        for (float t = 0; t < duration; t += Time.deltaTime)
+        for (float t = 0; t < duration; t += WorkflowTiming.DeltaTime)
         {
             yield return WaitForRepair();
             for (int i = 0; i < joints.Length; i++)
@@ -353,7 +353,7 @@ public class RobotGrabController : MonoBehaviour
         const float duration=.32f/MotionSpeedMultiplier;
         Vector3[] start=new Vector3[fingers.Length];
         for(int i=0;i<fingers.Length;i++)start[i]=fingers[i].localPosition;
-        for (float t = 0; t < duration; t += Time.deltaTime)
+        for (float t = 0; t < duration; t += WorkflowTiming.DeltaTime)
         {
             yield return WaitForRepair();
             float phase=Mathf.SmoothStep(0,1,t/duration);

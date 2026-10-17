@@ -1,15 +1,15 @@
 {
     "unityVersion": "6000.6.0f1",
-    "startedUtc": "2026-10-16T16:30:00.6216877Z",
-    "finishedUtc": "2026-10-16T16:33:05.6672285Z",
+    "startedUtc": "2026-10-17T11:37:14.5030425Z",
+    "finishedUtc": "2026-10-17T11:40:04.3874751Z",
     "editorStartupLog": "",
     "passed": true,
     "completedCycles": 4,
     "pickupClearanceMetres": [
-        0.08049408346414566,
-        0.0807090476155281,
-        0.08069894462823868,
-        0.07250628620386124
+        0.08034152537584305,
+        0.07854650169610977,
+        0.07731292396783829,
+        0.0760498121380806
     ],
     "completedCollisionChecks": 4,
     "collisionSelfCheckPassed": true,

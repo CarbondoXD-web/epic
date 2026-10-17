@@ -43,7 +43,7 @@ public class ConveyorFeedController : MonoBehaviour
         {
             if(!robot.IsDamaged)
             {
-                elapsed+=Time.deltaTime;
+                elapsed+=WorkflowTiming.DeltaTime;
                 Vector3 next=Vector3.Lerp(start,pickupPosition,Mathf.SmoothStep(0,1,elapsed/duration));
                 AdvanceTreads(Vector3.Dot(next-raw.transform.position,direction));
                 raw.transform.position=next;
@@ -55,7 +55,7 @@ public class ConveyorFeedController : MonoBehaviour
         // A stopped conveyor presents one blank. The robot never chases a moving part.
         for(float elapsed=0;elapsed<.15f;)
         {
-            if(!robot.IsDamaged)elapsed+=Time.deltaTime;
+            if(!robot.IsDamaged)elapsed+=WorkflowTiming.DeltaTime;
             yield return null;
         }
         while(robot.IsDamaged)yield return null;

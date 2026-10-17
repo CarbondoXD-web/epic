@@ -39,7 +39,7 @@ public class MachineOperationController : MonoBehaviour
         {
             if(!robot.IsDamaged)
             {
-                elapsed+=Time.deltaTime;
+                elapsed+=WorkflowTiming.DeltaTime;
                 float t=Mathf.Clamp01(elapsed/duration);
                 // Quintic easing keeps velocity and acceleration zero at both
                 // ends of the fixed slide track: no sudden start or hard stop.
