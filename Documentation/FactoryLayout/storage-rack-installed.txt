@@ -1,0 +1,6 @@
+Source=storage rack.fbx / retrieval system / ASRS_ASSEMBLY / RAFIAx
+MeshVertices=16700
+Modules=3
+Slots=12, four per module, open top
+Bounds=Center: (1.40, 0.88, 19.57), Extents: (0.12, 0.87, 1.57)
+SlotHeight=1.743

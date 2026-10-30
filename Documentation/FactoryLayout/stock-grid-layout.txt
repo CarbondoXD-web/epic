@@ -1,0 +1,5 @@
+Layout=3 columns x 4 rows
+StockCount=12
+Tray=1.14m x 1.58m
+StockOverlap=False
+PickOrder=nearest column first, clear before entering next column

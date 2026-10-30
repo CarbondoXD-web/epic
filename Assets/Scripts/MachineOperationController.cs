@@ -1,8 +1,9 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 public class MachineOperationController : MonoBehaviour
 {
+    public bool independentWorkflow;
     public RobotGrabController robot;
     public Transform door, carriage;
     public Transform toolHead;
@@ -37,7 +38,7 @@ public class MachineOperationController : MonoBehaviour
         if(Vector3.Distance(start,position)<.0001f)yield break;
         for(float elapsed=0;elapsed<duration;)
         {
-            if(!robot.IsDamaged)
+            if(!robot.IsDamaged || independentWorkflow)
             {
                 elapsed+=WorkflowTiming.DeltaTime;
                 float t=Mathf.Clamp01(elapsed/duration);

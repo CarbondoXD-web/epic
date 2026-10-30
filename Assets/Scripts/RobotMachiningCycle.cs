@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 public class RobotMachiningCycle : MonoBehaviour
@@ -11,6 +11,7 @@ public class RobotMachiningCycle : MonoBehaviour
     public Transform spindle;
     public MachineOperationController machine;
     public ConveyorFeedController conveyor;
+    public RobotRailController rail;
     public int CompletedCount { get; private set; }
     public string Message { get; private set; } = "点击机械臂：取原料 → 送入机床 → 加工 → 成品放入成品台";
     Vector3 sourcePosition, finishedPosition, homeGripPosition;
@@ -148,6 +149,7 @@ public class RobotMachiningCycle : MonoBehaviour
         raw.interpolation=conveyor?RigidbodyInterpolation.None:RigidbodyInterpolation.Interpolate;
         if(machine)machine.IsBusy=true;
         if(conveyor){Message="1/4 输送带送料中，机械臂等待…";yield return conveyor.Deliver();}
+        if(rail){Message="1/4 收臂至安全位，滑台前往取料工位…";yield return Move(sourcePosition-rail.direction*rail.pickupStation+Vector3.up*.265f,.75f);if(moveFailed){yield return Recover();yield break;}yield return rail.Travel(rail.pickupStation);}
         Message=conveyor?"1/4 输送带已停，机械臂正在取料…":"1/4 正在从原料台取料…";
 #if UNITY_EDITOR
         checkingPickup=true;MinimumPickupClearance=.10f;closestPickupPair="at least 100 mm";
@@ -168,6 +170,7 @@ public class RobotMachiningCycle : MonoBehaviour
         checkingPickup=false;PickupClearanceChecks++;
         Debug.Log("[Machining] PICKUP CLEARANCE: "+MinimumPickupClearance.ToString("F4")+" m pair="+closestPickupPair);
 #endif
+        if(rail){Message="2/4 已夹紧原料，沿地轨移向机床…";yield return rail.Travel(rail.machineStation);}
         Vector3 machineOutward=Quaternion.Euler(0,-65,0)*Vector3.forward;
         if(machine){Message="机床开门，准备上料…";yield return machine.OpenDoor();}
         Message="2/4 正在将原料送入机床…";
@@ -216,6 +219,7 @@ public class RobotMachiningCycle : MonoBehaviour
         yield return Move(machinePosition+Vector3.up*.04f,.45f);
         yield return Move(robot.machineApproach.position,.7f);
         yield return Move(robot.machineHold.position+machineOutward*.35f,.7f);
+        if(rail){Message="4/4 已取出阶梯轴，沿地轨移向成品工位…";yield return rail.Travel(rail.outputStation);}
         Vector3 attachmentOutward=machineOutward;
         // Leave the bay along its normal before moving across the original
         // machine-mounted tray. Carry high, then descend on the outboard slot.
@@ -260,7 +264,8 @@ public class RobotMachiningCycle : MonoBehaviour
         // Keep the tool on the outside route instead of interpolating all joint
         // angles at once, which bows the tool path back through the side shelf.
         if(machine){Message="机械臂已避开门板，机床关门…";yield return machine.Finish();}
-        yield return Move(homeGripPosition+attachmentOutward*.25f,.8f);
+        yield return Move(homeGripPosition+attachmentOutward*.25f+(rail?rail.direction*rail.Position:Vector3.zero),.8f);
+        if(rail){Message="滑台返回机床待机位…";yield return rail.Travel(rail.machineStation);}
         yield return Move(homeGripPosition,.6f);
         if(moveFailed){yield return Recover();yield break;}
 #if UNITY_EDITOR
@@ -335,12 +340,13 @@ public class RobotMachiningCycle : MonoBehaviour
                 for(int i=0;i<count;i++)
                 {
                     var hit=returnContacts[i];
-                    if(hit.transform.root.name!="Haas Mill - Open Loading Bay" && !(conveyor && hit.transform.IsChildOf(conveyor.transform)))continue;
+                    bool railObstacle=rail && hit.transform.IsChildOf(rail.transform) && !hit.transform.IsChildOf(robot.transform);
+                    if(hit.transform.root.name!="Haas Mill - Open Loading Bay" && !(conveyor && hit.transform.IsChildOf(conveyor.transform)) && !railObstacle && !hit.name.StartsWith("Machine foundation") && hit.transform.root.name!="Finished Parts Table")continue;
                     if(!Physics.ComputePenetration(armProbes[meshIndex],mesh.transform.position,mesh.transform.rotation,hit,hit.transform.position,hit.transform.rotation,out _,out float depth))continue;
                     // A blank resting on the belt is intentional support contact.
                     // Deeper intersections and all robot/rail contacts remain failures.
                     if(conveyor && mesh.transform.IsChildOf(raw.transform) && hit.transform==conveyor.beltSurface && depth<=.001f)continue;
-                    string key=Message+":"+mesh.name+":"+hit.name;
+                    string key=mesh.name+":"+hit.name;
                     if(cycleHits.Add(key))Debug.LogWarning("[Machining] FULL CONTACT: "+key+" depth="+depth.ToString("F4")+" grip="+robot.grip.position);
                 }
             }
@@ -384,6 +390,7 @@ public class RobotMachiningCycle : MonoBehaviour
         robot.SetGripOrientation(homeGripRotation);
         yield return robot.WorkflowFingers(true);
         yield return robot.WorkflowHome();
+        if(rail)yield return rail.Travel(rail.machineStation);
         if(machine)machine.IsBusy=false;
         running=false;robot.SetWorkflowState(false,false);
         Message="该动作目标暂时不可达，已复位；请单击重试";

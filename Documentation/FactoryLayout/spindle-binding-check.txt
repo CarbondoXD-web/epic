@@ -1,0 +1,2 @@
+PASS: all 6 independent spindle pivots rotate; motor housing world position/rotation unchanged.
+2026-10-30T02:17:59.9103143Z

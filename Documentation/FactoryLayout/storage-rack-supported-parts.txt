@@ -1,0 +1,12 @@
+EP-001 bounds=Center: (-0.66, 0.71, 25.44), Extents: (0.07, 0.08, 0.08) bottomGap=0.002995968
+EP-002 bounds=Center: (-0.22, 0.71, 25.44), Extents: (0.07, 0.08, 0.08) bottomGap=0.003000379
+EP-003 bounds=Center: (0.22, 0.71, 25.44), Extents: (0.07, 0.08, 0.08) bottomGap=0.002983987
+EP-004 bounds=Center: (0.66, 0.71, 25.44), Extents: (0.07, 0.08, 0.08) bottomGap=0.002980173
+EP-005 bounds=Center: (-0.66, 1.19, 25.44), Extents: (0.07, 0.08, 0.08) bottomGap=0.003000498
+EP-006 bounds=Center: (-0.22, 1.19, 25.44), Extents: (0.07, 0.08, 0.08) bottomGap=0.003000617
+EP-007 bounds=Center: (0.22, 1.19, 25.44), Extents: (0.07, 0.08, 0.08) bottomGap=0.00300014
+EP-008 bounds=Center: (0.66, 1.19, 25.44), Extents: (0.07, 0.08, 0.08) bottomGap=0.002983451
+EP-009 bounds=Center: (-0.66, 1.67, 25.44), Extents: (0.07, 0.08, 0.08) bottomGap=0.003008604
+EP-010 bounds=Center: (-0.22, 1.67, 25.44), Extents: (0.07, 0.08, 0.08) bottomGap=0.003000259
+EP-011 bounds=Center: (0.22, 1.67, 25.44), Extents: (0.07, 0.08, 0.08) bottomGap=0.002993584
+EP-012 bounds=Center: (0.66, 1.67, 25.44), Extents: (0.07, 0.08, 0.08) bottomGap=0.003006339

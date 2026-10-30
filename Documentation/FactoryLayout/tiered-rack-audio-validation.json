@@ -1,0 +1,17 @@
+{
+    "passed": true,
+    "utc": "2026-10-28T12:57:30.4801106Z",
+    "delivered": 12,
+    "gripped": 12,
+    "contacts": 0,
+    "loadedPause": true,
+    "machiningAudio": true,
+    "speeds": [
+        0.5,
+        1.0,
+        1.5,
+        2.0,
+        3.0
+    ],
+    "errors": []
+}

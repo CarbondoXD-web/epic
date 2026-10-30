@@ -1,0 +1,7 @@
+Passed=True
+Machines=6
+MissingScripts=0
+MissingMeshes=0
+MissingMaterials=0
+GameplayComponents=0
+MachineBoundsOverlaps=0

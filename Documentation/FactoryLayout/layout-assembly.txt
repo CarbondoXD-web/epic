@@ -1,0 +1,10 @@
+CNC 01 Center: (1.78, 1.77, 2.78), Extents: (0.97, 1.77, 1.32)
+CNC 02 Center: (-1.78, 1.77, 5.62), Extents: (0.97, 1.77, 1.32)
+CNC 03 Center: (1.78, 1.77, 8.78), Extents: (0.97, 1.77, 1.32)
+CNC 04 Center: (-1.78, 1.77, 11.62), Extents: (0.97, 1.77, 1.32)
+CNC 05 Center: (1.78, 1.77, 14.78), Extents: (0.97, 1.77, 1.32)
+CNC 06 Center: (-1.78, 1.77, 17.62), Extents: (0.97, 1.77, 1.32)
+原料送料输送带 Center: (0.80, 0.94, -1.54), Extents: (0.19, 0.94, 1.48)
+成品台面 Center: (1.35, 1.51, 19.75), Extents: (0.55, 0.04, 1.75)
+Missing scripts=0
+Gameplay components=0

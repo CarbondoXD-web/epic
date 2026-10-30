@@ -1,0 +1,5 @@
+Style matched to RobotMachineGrab
+CameraClear=Skybox
+FloorMaterial=Assets/Materials/Grab_5C6675.mat
+LightIntensity=1
+AmbientIntensity=1

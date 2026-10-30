@@ -1,0 +1,8 @@
+{
+  "durationSeconds": 4,
+  "rms": 0.11529328295652767,
+  "peak": 0.31150499444814905,
+  "loopBoundaryDelta": 0.011345416649387633,
+  "sourceVolume": 0.24,
+  "origin": "locally synthesized periodic spindle motor and cutting noise"
+}

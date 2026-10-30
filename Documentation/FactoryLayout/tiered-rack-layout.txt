@@ -1,0 +1,6 @@
+Front=-Z toward rail
+Rows=3
+SlotsPerRow=4
+ShelfSurfaces=0.62,1.10,1.58m
+Imported rack reused as back bracing
+Insertion=front, horizontal, then withdraw before fold

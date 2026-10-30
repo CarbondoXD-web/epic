@@ -1,7 +1,7 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Optional continuous preview; the robot's pedestal remains stationary.
+// Optional continuous machining and linear rail preview.
 public class FactoryConveyorDemo : MonoBehaviour
 {
     public RobotMachiningCycle cycle;
@@ -28,7 +28,7 @@ public class FactoryConveyorDemo : MonoBehaviour
         camera.orthographic=top;
         if(top)
         {
-            camera.orthographicSize=2.5f;
+            camera.orthographicSize=3.5f;
             camera.transform.SetPositionAndRotation(new Vector3(-.30f,8,-.70f),Quaternion.Euler(90,0,0));
         }
     }
@@ -36,7 +36,7 @@ public class FactoryConveyorDemo : MonoBehaviour
     {
         var previous=GUI.matrix;
         GUI.matrix=Matrix4x4.TRS(Vector3.zero,Quaternion.identity,new Vector3(Screen.width/1280f,Screen.height/720f,1));
-        GUI.Box(new Rect(20,20,450,115),"Central aisle / fixed robot / raw material feed");
+        GUI.Box(new Rect(20,20,450,115),"Linear rail / robot transfer / machining cell");
         autoRun=GUI.Toggle(new Rect(35,50,220,25),autoRun,"Continuous cycle preview");
         if(GUI.Button(new Rect(35,85,195,32),"1: Perspective"))View(false);
         if(GUI.Button(new Rect(245,85,195,32),"2: Top view"))View(true);

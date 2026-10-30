@@ -1,0 +1,6 @@
+TrackEnd=24.9706
+CarriageFrontOffset=0.6714504
+SafeDock=24.17915
+RackBounds=Center: (0.00, 0.88, 25.31), Extents: (1.57, 0.87, 0.12)
+RackFrontGap=0.2199993
+AccessFace=-Z

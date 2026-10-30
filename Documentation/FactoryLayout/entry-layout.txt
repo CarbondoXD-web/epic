@@ -1,0 +1,6 @@
+BeltTop=1.05
+BenchTop=1.05
+RackTop=1.05
+StockCount=12
+StockMinimumGap=0.0009999275
+Manual stock-to-belt loading; no automatic warehouse mechanism installed.

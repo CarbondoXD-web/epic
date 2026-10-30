@@ -1,9 +1,11 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class RobotGrabController : MonoBehaviour
 {
+    public bool externalControl;
+    public System.Action WorkflowPoseSample;
     public Transform[] joints;
     public Vector3[] axes;
     public Transform grip;
@@ -66,6 +68,7 @@ public class RobotGrabController : MonoBehaviour
 
     void Update()
     {
+        if(externalControl)return;
         var mouse = Mouse.current;
         if (mouse != null && mouse.leftButton.wasPressedThisFrame && !mouse.rightButton.isPressed && !mouse.middleButton.isPressed)
         {
@@ -105,8 +108,8 @@ public class RobotGrabController : MonoBehaviour
     public void SetWorkflowState(bool busy, bool holding) { IsBusy = busy; IsHolding = holding; }
     public void SetGripOrientation(Quaternion orientation) { gripOrientation = orientation; }
     public bool Reached(Vector3 target) => Vector3.Distance(grip.position,target)<.006f && Quaternion.Angle(grip.rotation,gripOrientation)<2f;
-    public IEnumerator WorkflowMove(Vector3 target,float duration) { yield return MoveGrip(target,duration); }
-    public IEnumerator WorkflowFingers(bool open) { yield return Fingers(open); }
+    public IEnumerator WorkflowMove(Vector3 target,float duration,float actionSpeed=1f) { yield return MoveGrip(target,duration,actionSpeed); }
+    public IEnumerator WorkflowFingers(bool open,float actionSpeed=1f) { yield return Fingers(open,actionSpeed); }
     // Include the finger supports, not only the small contact pads, when releasing.
     public IEnumerator WorkflowRelease(Transform part)
     {
@@ -166,7 +169,7 @@ public class RobotGrabController : MonoBehaviour
 
     IEnumerator WaitForRepair()
     {
-        while (IsDamaged) yield return null;
+        while (IsDamaged || Time.timeScale==0) yield return null;
     }
 
     IEnumerator Pick()
@@ -235,8 +238,9 @@ public class RobotGrabController : MonoBehaviour
         IsBusy = false;
     }
 
-    IEnumerator MoveGrip(Vector3 target, float duration)
+    IEnumerator MoveGrip(Vector3 target, float duration,float actionSpeed=1f)
     {
+        if(externalControl){yield return StableMove(target,duration,actionSpeed);yield break;}
         yield return WaitForRepair();
         Vector3 start = grip.position;
         Quaternion startOrientation=grip.rotation;
@@ -261,6 +265,27 @@ public class RobotGrabController : MonoBehaviour
             yield return null;
         }
         yield return WaitForRepair();
+    }
+
+
+    IEnumerator StableMove(Vector3 target,float duration,float actionSpeed=1f)
+    {
+        yield return WaitForRepair();
+        Vector3 start=grip.position;Quaternion from=grip.rotation,to=gripOrientation;
+        duration=Mathf.Max(duration,Quaternion.Angle(from,to)/75f)/MotionSpeedMultiplier/Mathf.Max(.1f,actionSpeed);
+        float elapsed=0,solved=0;
+        while(solved<duration)
+        {
+            yield return WaitForRepair();elapsed=Mathf.Min(duration,elapsed+WorkflowTiming.DeltaTime);
+            while(solved+.02f<=elapsed || (elapsed>=duration && solved<duration))
+            {
+                solved=Mathf.Min(duration,solved+.02f);float phase=Mathf.SmoothStep(0,1,solved/duration);
+                gripOrientation=Quaternion.Slerp(from,to,phase);Solve(Vector3.Lerp(start,target,phase));WorkflowPoseSample?.Invoke();
+            }
+            yield return null;
+        }
+        gripOrientation=to;
+        for(int i=0;i<60 && !Reached(target);i++){yield return WaitForRepair();Solve(target);WorkflowPoseSample?.Invoke();yield return null;}
     }
 
     public void ConfigurePose(Vector3 target)
@@ -348,9 +373,9 @@ public class RobotGrabController : MonoBehaviour
     {
         for (int i = 0; i < fingers.Length; i++) fingers[i].localPosition = Vector3.Lerp(fingerHome[i], fingerOpen[i], open);
     }
-    IEnumerator Fingers(bool open)
+    IEnumerator Fingers(bool open,float actionSpeed=1f)
     {
-        const float duration=.32f/MotionSpeedMultiplier;
+        float duration=.32f/MotionSpeedMultiplier/Mathf.Max(.1f,actionSpeed);
         Vector3[] start=new Vector3[fingers.Length];
         for(int i=0;i<fingers.Length;i++)start[i]=fingers[i].localPosition;
         for (float t = 0; t < duration; t += WorkflowTiming.DeltaTime)
@@ -366,6 +391,7 @@ public class RobotGrabController : MonoBehaviour
 
     void OnGUI()
     {
+        if(externalControl)return;
         Matrix4x4 previous = GUI.matrix;
         GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(Screen.width / 1280f, Screen.height / 720f, 1));
         var title = new GUIStyle(GUI.skin.box) { font = uiFont, fontSize = 24, alignment = TextAnchor.UpperLeft, padding = new RectOffset(18, 18, 12, 8) };
