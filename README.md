@@ -19,19 +19,19 @@
 | Unity | **6000.6.0f1**（Unity 6.6） |
 | 渲染管线 | Universal RP 17.6.0 |
 | 输入系统 | Input System 1.20.0（工程已设为 New Input System，旧 Input Manager 不可用） |
-| Git LFS | **必需**，模型、音频、图片均由 LFS 存储 |
+| Git LFS | **必需**，音频与文档图片以 LFS 存储；FBX 模型直接存入仓库（见 `.gitattributes` 末尾的覆盖规则） |
 
 ## 快速开始
 
 ```sh
-# 1. 先安装并初始化 Git LFS，否则 clone 下来只有指向 LFS 的文本指针
+# 1. 先安装并初始化 Git LFS（音频与文档图片依赖它）
 git lfs install
 
 # 2. 克隆仓库
-git clone https://github.com/epic699/epic.git
+git clone https://github.com/CarbondoXD-web/epic.git
 cd epic
 
-# 3. 拉取 LFS 实体（clone 时已自动 smudge 成功则可跳过）
+# 3. 确认 LFS 实体已落地（clone 时自动 smudge 失败的话再执行一次）
 git lfs pull
 ```
 
@@ -40,9 +40,9 @@ git lfs pull
 打开 `Assets/Scenes/FactoryLayout.unity`，点击 Play。
 
 > **注意：不要用 GitHub 网页的 “Download ZIP”。**
-> 源码压缩包不包含 LFS 实体，解压后 `Assets/Models/*.fbx` 只有 130 字节左右，
-> Unity 会报 `ImportFBX Errors: None of the registered readers can process the file`，
-> 结果是所有模型都不显示，只剩空的 `MeshFilter`。
+> 源码压缩包不含 LFS 实体。FBX 模型因为直接存在仓库里，ZIP 中是完整的；
+> 但 `Assets/Audio/*.wav` 与 `Documentation/**/*.png` 会变成 100 多字节的指针文本，
+> 结果是加工音效丢失、文档图片损坏。请始终使用 `git clone` + `git lfs pull`。
 
 ## 操作说明
 
@@ -117,6 +117,14 @@ ProjectSettings/   Unity 工程设置
 
 如果你本地使用了 Unity MCP（`com.coplaydev.unity-mcp`）这类 `file:` 本地包，请只在本机添加，
 不要提交——否则其他人 clone 后会因为解析不到该路径而无法正常打开工程。
+
+## 仓库体积说明
+
+模型以普通 git blob 存储，仓库完整克隆约 250 MB。其中
+`Assets/Models/mobile robot+tray.fbx` 单个文件 **96.5 MB**，已接近 GitHub 100 MiB 的单文件硬上限。
+
+后续若要继续扩充模型，建议改为 Git LFS 存储（需要 `git lfs migrate` 重写历史），
+或让美术导出减面版本，否则该文件任何一次修改都可能导致推送被拒。
 
 ## 已知限制
 
