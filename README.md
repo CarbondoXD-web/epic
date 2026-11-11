@@ -1,41 +1,132 @@
-# EPIC 机械臂上下料小游戏
+# EPIC · 六机床柔性生产线
 
-## 当前主场景：六机床柔性生产线
+一个基于 Unity 的工业产线交互原型：机械臂沿长地轨依次为六台数控机床上下料，加工完成的阶梯轴逐层码放到末端货架，全程可观察、可干预。
 
-使用 Unity 6.6（6000.6.0f1）打开工程，在 `Assets/Scenes/FactoryLayout.unity` 中点击 Play。单击机械臂或点击“开始搬运”，机械臂会从原料区直接取料，沿长地轨服务六台机床，最后将十二件阶梯轴逐层放到末端货架（每层四件）。界面提供机床状态、暂停/继续、重新开始和 0.5×～3× 倍速；按 `1` 看整线、`2` 俯视、`3` 看原料、`4` 看成品货架。加工声从各机床主轴位置发出，并随观察距离减弱。详细说明与验证记录见 `Documentation/FactoryLayout/`。
+![产线总览](Documentation/FactoryLayout/layout-overview.png)
 
-下文的 `RobotMachineGrab.unity` 是保留的单机床演示场景，其输送带操作说明适用于该场景。
+## 功能特性
 
-使用 Unity 6.6（6000.6.0f1）打开项目，在 `Assets/Scenes/RobotMachineGrab.unity` 中点击 Play。
+- **产线循环**：机械臂从原料区直接取料，沿地轨服务六台机床，最后把十二件阶梯轴按每层四件码放到末端货架。
+- **两种视角**：整线全景观察（右键旋转 / 中键平移 / 滚轮缩放）与第一人称漫游（WASD 行走、Shift 疾跑、空格跳跃）。
+- **直接操作**：单击机械臂开始搬运，双击切换损坏/修复，`P` 暂停继续，界面提供 0.5×～3× 倍速与重新开始。
+- **状态反馈**：机床状态面板、机械臂指示灯（绿=正常/加工、黄=转移、红=故障），加工声从各机床主轴位置发出并随距离衰减。
+- **编辑期工具**：`Tools > EPIC` 菜单提供布局重建、间隙标定、流程校验等 20 余项一键工具，重复执行不会叠加对象。
 
-- 单击机械臂：输送带送料并停稳 → 抓取原料 → 开门上料 → 机械臂退出、关门加工 → 工作台返回并开门 → 取出阶梯轴并放到成品台。
-- 双击机械臂：切换损坏或修复，损坏期间流程暂停。
-- 右键拖动旋转视角，滚轮缩放，中键平移，R 恢复视角。
-- 指示灯：绿色正常/加工，黄色转移动作，红色故障。
+## 环境要求
 
-原料输送线现按参考图布置在机床前方中央通道，沿机床正面平行延伸 3.05 米；原料行程 2.65 米，送料约 5 秒，停稳后由固定底座的机械臂抓取。取料端保留 200 mm 无护栏区域，末端支架向上游后移，避开机械臂底座及摆动范围。旧 CAD 输送带和支架保留在场景中并停用。
+| 项 | 版本 |
+| --- | --- |
+| Unity | **6000.6.0f1**（Unity 6.6） |
+| 渲染管线 | Universal RP 17.6.0 |
+| 输入系统 | Input System 1.20.0（工程已设为 New Input System，旧 Input Manager 不可用） |
+| Git LFS | **必需**，模型、音频、图片均由 LFS 存储 |
 
-在 Unity 菜单选择 `Tools > EPIC > Show Central Aisle Dynamic Preview`，自动打开主场景并进入连续加工演示。左上角可关闭连续循环；按 `1` 恢复透视，按 `2` 切换俯视，用于检查轨道与机床、机械臂的相对位置。停止 Play 即退出演示。
-
-`Tools > EPIC > Build Central Aisle Feed Line` 可重建同一布局，重复执行不会叠加轨道。修改位置后运行 `Tools > EPIC > Validate Conveyor And Full Cycle`，验证完整动作、固定底座、输送线与机床/成品台间隙以及故障暂停/恢复。
-
-此组织仓库包含完整模型文件，当前演示资源直接通过 Git 保存，克隆后无需额外下载 LFS 模型：
+## 快速开始
 
 ```sh
+# 1. 先安装并初始化 Git LFS，否则 clone 下来只有指向 LFS 的文本指针
+git lfs install
+
+# 2. 克隆仓库
 git clone https://github.com/epic699/epic.git
 cd epic
+
+# 3. 拉取 LFS 实体（clone 时已自动 smudge 成功则可跳过）
+git lfs pull
 ```
 
-Game 窗口取消勾选 `Low Resolution Aspect Ratios`，避免低分辨率预览放大。详细实现和操作说明见 [RobotGrab_README.md](RobotGrab_README.md)。
+用 Unity Hub 以 **6000.6.0f1** 打开工程。首次导入需重建 `Library`，模型合计约 200 MB，通常需要几分钟。
 
-这是固定工位布局的交互原型，加工以动画和工件模型切换表示，不模拟真实切削或工业夹持力。
+打开 `Assets/Scenes/FactoryLayout.unity`，点击 Play。
 
-项目迁移自 [scy8848/EPIC](https://github.com/scy8848/EPIC)，包含原料输送带两侧导向轨道和带面移动同步修正。实现及验证范围见 `RobotGrab_README.md`。
+> **注意：不要用 GitHub 网页的 “Download ZIP”。**
+> 源码压缩包不包含 LFS 实体，解压后 `Assets/Models/*.fbx` 只有 130 字节左右，
+> Unity 会报 `ImportFBX Errors: None of the registered readers can process the file`，
+> 结果是所有模型都不显示，只剩空的 `MeshFilter`。
 
-加工仓门采用顶挂避让路线：先向外和向上各退让 200 mm，再向远离原装附件的一侧滑动 700 mm，开合各约 1.6 秒。五次缓动使起止速度和加速度均为零。门完全打开后才允许上料，机械臂退出至门外等待点后才关门，工作台回位后才再次开门。选择 `Tools > EPIC > Show Chamber Door Dynamic Preview` 可从机床正面观看连续开门、上料、加工、取件和关门过程。
+## 操作说明
 
-机床左侧两个原装附件 `CONV-SHELF-VF-SM` 和 `CONV-HOLDER-VF-XS` 按 FBX 的原始位置、旋转和比例恢复到机床上。此前添加的独立工具架与下门轨停用，保留对象供 Undo/恢复；所有安装工具均不再将原装附件向外移动。输送线十根支腿与五根横梁、带床保持连接，顶挂门轨与避让段由机壳支架固定。结构检查报告见 `docs/structure-validation.json`，`MachineAttachmentSetup.ApplyBatch` 可重复恢复附件并适配门轨；重复执行不会叠加对象。
+### 全景观察（默认）
 
-加工仓内部已恢复用户提供的 `Haas Mill (1).fbx` 原始主轴立柱、主轴、刀具、罩壳和夹具位置。该文件与项目的 `Assets/Models/Haas Mill Latest.fbx` 内容相同，SHA-256 为 `e8c359976078c593bdb1388f512824d0d44821c72146e993543f64641d11182e`，无需重复模型资源。加工时主轴头回到原始位置，上下料时沿 Z 轴临时上退 250 mm；取放点对齐原始夹具。轨道、机械臂底座、成品台和四阶段工作流程保持不变。携料时先退出机床再从附件外侧高位经过，在原成品台的外侧槽位放料，原台面位置不变。恢复校验见 `docs/original-chamber-validation.json`，可用 `Tools > EPIC > Restore Original Chamber Internals` 重复恢复仓内组件。
+| 操作 | 功能 |
+| --- | --- |
+| 右键拖动 | 绕中心旋转 |
+| 中键拖动 | 平移焦点 |
+| 滚轮 | 缩放（4–65 m） |
+| `1` / `2` / `3` / `4` | 整线全景 / 俯视布局 / 原料区域 / 成品货架 |
+| `R` | 恢复默认视角 |
 
-已通过 Unity 6000.6.0f1 的四轮实际加工循环、故障暂停/恢复及机床和输送带碰撞检查，第四轮专门检查开门中途故障暂停和恢复。门板整个行程另以 201 个采样点检查机壳、侧面托架及上下导轨。报告见 `docs/conveyor-validation.json` 和 `docs/door-clearance.json`。Windows 首次导入或自动验证可运行 `Tools/Validate-Unity.ps1`，自动处理该编辑器版本中渲染管线转换器脚本缺少元数据的问题。
+### 第一人称漫游
+
+按 `F` 在漫游与全景之间切换。
+
+| 操作 | 功能 |
+| --- | --- |
+| `W` `A` `S` `D` / 方向键 | 行走（2.4 m/s） |
+| `Shift` | 疾跑（6.0 m/s） |
+| `空格` | 跳跃（约 1.1 m 高） |
+| 鼠标 | 环视 |
+| `Esc` | 释放鼠标，点击画面重新锁定 |
+| `R` | 回到出生点 |
+| `F` | 返回全景观察 |
+
+### 产线控制
+
+| 操作 | 功能 |
+| --- | --- |
+| 单击机械臂 | 开始当前搬运任务 |
+| 双击机械臂 | 切换损坏 / 修复（损坏期间流程暂停） |
+| `P` | 暂停 / 继续 |
+
+## 场景
+
+| 场景 | 说明 |
+| --- | --- |
+| `Assets/Scenes/FactoryLayout.unity` | **主场景**，六机床柔性生产线 |
+| `Assets/Scenes/RobotMachineGrab.unity` | 单机床演示：输送带送料 → 抓取 → 开门上料 → 加工 → 取件，详见 [RobotGrab_README.md](RobotGrab_README.md) |
+| `Assets/Scenes/RobotGrab.unity` | 早期机械臂抓取演示 |
+| `Assets/Scenes/SampleScene.unity` | URP 模板空场景 |
+
+## 项目结构
+
+```
+Assets/
+  Models/          FBX 模型（LFS），含 StorageRack/、合并/、围网_合并/
+  Scenes/          四个场景
+  Scripts/         运行时脚本，Factory/ 下为产线逻辑
+  Editor/          Tools > EPIC 编辑器工具
+  Materials/       材质
+  Settings/        URP 管线与渲染配置
+Documentation/     布局说明、验证记录与截图
+docs/              校验报告（JSON）
+Tools/             Validate-Unity.ps1 等命令行工具
+Packages/          manifest.json 与 packages-lock.json
+ProjectSettings/   Unity 工程设置
+```
+
+## 文档
+
+- [模型布局说明](Documentation/FactoryLayout/模型布局说明.md)
+- [直取原料使用说明](Documentation/FactoryLayout/直取原料使用说明.md)
+- [单机床演示说明](RobotGrab_README.md)
+- [开发记录](Documentation/开发记录.md)：各阶段实现细节与调整原因
+
+## 本地依赖说明
+
+仓库的 `Packages/manifest.json` **不包含任何指向本机绝对路径的本地包**，保证 clone 后可直接解析。
+
+如果你本地使用了 Unity MCP（`com.coplaydev.unity-mcp`）这类 `file:` 本地包，请只在本机添加，
+不要提交——否则其他人 clone 后会因为解析不到该路径而无法正常打开工程。
+
+## 已知限制
+
+这是固定工位布局的交互原型，加工过程以动画与工件模型切换表示，不模拟真实切削、刀具磨损或工业夹持力。
+
+## 致谢
+
+项目迁移自 [scy8848/EPIC](https://github.com/scy8848/EPIC)，并在此基础上扩展了丝杠输送线、加工仓门避让、
+机床附件复原、六机床产线与第一人称漫游。
+
+## 许可
+
+本仓库未附带开源许可协议。如需在其它项目中使用其中的模型或代码，请先联系仓库作者取得授权。
